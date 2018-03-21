@@ -17,7 +17,7 @@ import logging
 
 from collections import OrderedDict
 # eclipse works with linux paths
-from posixpath import normpath, join, basename
+from os.path import normpath, join, basename
 
 from .tool import Tool, Builder, Exporter
 from .gccarm import MakefileGccArm
@@ -53,8 +53,10 @@ class EclipseGnuARM(Tool, Exporter, Builder):
         return 'gcc_arm'
 
     def _expand_one_file(self, source, new_data, extension):
-        return {"path": join('PARENT-%s-PROJECT_LOC' % new_data['output_dir']['rel_path'], normpath(source)), "name": basename(
-                    source), "type": self.file_types[extension.lower()]}
+        source = normpath(source).replace('../','').replace('..\\','')
+        return {"path": join('PARENT-%s-PROJECT_LOC' % new_data['output_dir']['rel_count'], source).replace('\\','/'),
+                "name": basename(source), 
+                "type": self.file_types[extension.lower()]}
 
     def _expand_sort_key(self, file) :
         return file['name'].lower()
@@ -68,7 +70,30 @@ class EclipseGnuARM(Tool, Exporter, Builder):
         output = copy.deepcopy(self.generated_project)
         data_for_make = self.workspace.copy()
 
-        self.exporter.process_data_for_makefile(data_for_make)
+        self.exporter.process_data_for_makefile(data_for_make)   
+             
+        if data_for_make['linker_file'] :
+            data_for_make['linker_file'] = data_for_make['linker_file'].replace('\\','/')
+        if data_for_make['toolchain_bin_path'] :
+            data_for_make['toolchain_bin_path'] = data_for_make['toolchain_bin_path'].replace('\\','/')
+        new_paths = []
+        for path in data_for_make['lib_paths'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['lib_paths'] = new_paths
+        new_paths = []
+        for path in data_for_make['include_paths'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['include_paths'] = new_paths
+        new_paths = []
+        for path in data_for_make['source_paths'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['source_paths'] = new_paths
+        new_paths = []
+        for path in data_for_make['source_files_c'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['source_files_c'] = new_paths
+        new_paths = []
+        for path in data_for_make['source_files_cpp'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['source_files_cpp'] = new_paths
+        new_paths = []
+        for path in data_for_make['source_files_s'] : new_paths.append(path.replace('\\','/'))
+        data_for_make['source_files_s'] = new_paths
         output['path'], output['files']['makefile'] = self.gen_file_jinja('makefile_gcc.tmpl', data_for_make, 'Makefile', data_for_make['output_dir']['path'])
 
         expanded_dic = self.workspace.copy()

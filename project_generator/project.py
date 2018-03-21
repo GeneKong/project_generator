@@ -317,6 +317,7 @@ class Project:
                 use_sources = [files]
 
         for source_file in use_sources:
+            source_file = source_file.replace('\\', '/')
             source_file = os.path.normpath(source_file)
             if os.path.isdir(source_file):
                 self.project['export']['source_paths'].append(source_file)
