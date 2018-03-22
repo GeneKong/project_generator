@@ -19,7 +19,8 @@ CPU = {{core}}
 
 # toolchain specific
 TOOLCHAIN = {{toolchain}}
-TOOLCHAIN_BINPATH = {{toolchain_bin_path}}
+TOOLCHAIN_BINPATH = 
+export PATH := {{toolchain_bin_path}}:$(PATH)
 CC = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN){% block CC %}{% endblock %}
 CXX = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN){% block CXX %}{% endblock %}
 AS = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN){% block AS %}{% endblock %}
@@ -30,6 +31,8 @@ SIZE = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN)size
 OBJCOPY = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN){% block OBJCOPY %}{% endblock %}
 OBJDUMP = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN)objdump
 NM = $(TOOLCHAIN_BINPATH)$(TOOLCHAIN)nm
+
+
 
 # application specific
 INSTRUCTION_MODE = thumb
@@ -88,11 +91,7 @@ OBJCPFLAGS = -O ihex
 
 ARFLAGS = cr
 
-ifeq ($(OS),Windows_NT)
-	RM = rmdir /s /q
-else
-	RM = rm -rf
-endif
+RM = rm -rf
 
 C_SRCS := {% for file in source_files_c %} {{file}} {% endfor %}
 C_OBJS := $(patsubst %.c,$(OBJ_FOLDER)%.o,$(notdir $(C_SRCS)))
@@ -135,11 +134,7 @@ all: create_outputdir $(OBJ_FOLDER)$(TARGET)$(TARGET_EXT) print_info
 	{% for command in post_build_script %} ../../../{{command}} && {% endfor %} true
 
 create_outputdir:
-ifeq ($(OS),Windows_NT)
-	-mkdir $(OUT_DIR)
-else
 	$(shell mkdir $(OBJ_FOLDER) 2>/dev/null)
-endif
 
 {% if output_type == 'exe' %}
 # Tool invocations
