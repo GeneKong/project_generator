@@ -21,7 +21,7 @@ from . import argparse_filestring_type, argparse_string_type
 help = 'Generate a project record'
 
 def run(args):
-    generator = Generator(args.file)
+    generator = Generator(args)
     build_failed = False
     export_failed = False
     generated = True
@@ -42,6 +42,8 @@ def setup(subparser):
         "-f", "--file", help="YAML projects file", default='projects.yaml', type=argparse_filestring_type)
     subparser.add_argument(
         "-p", "--project", help="Project to be generated", default = '')
+    subparser.add_argument(
+        "-s", "--settings", help="Special target used to generated", default = 'settings.yaml')
     subparser.add_argument(
         "-t", "--tool", help="Create project files for provided tool",
         type=argparse_string_type(str.lower, False), choices=list(ToolsSupported.TOOLS_DICT.keys()) + list(ToolsSupported.TOOLS_ALIAS.keys()))

@@ -284,7 +284,7 @@ class Project:
             # include might be set to None - empty yaml list
             if include_file:
                 if os.path.isdir(include_file):
-                   # its a directory
+                    # its a directory
                     dir_path = include_file
                     # get all files from dir
                     include_files = []
@@ -446,7 +446,7 @@ class Project:
         # misc for tools requires dic merge
         misc = self._get_tool_data('misc', tool_keywords)
         for m in misc:
-           self.project['export']['misc'] = merge_recursive(self.project['export']['misc'], m)
+            self.project['export']['misc'] = merge_recursive(self.project['export']['misc'], m)
 
         # This is magic with sources/include_files as they have groups
         tool_sources = self._get_tool_sources(tool_keywords)

@@ -11,22 +11,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import yaml
+import yaml,re
 
 from .settings import ProjectSettings
 from .util import flatten, uniqify, load_yaml_records
 from .project import *
 
 class Generator:
-    def __init__(self, projects_file):
-        if type(projects_file) is not dict:
+    def __init__(self, args):
+        # first read all project settings, then replace project.yaml's variables.
+        try:
+            with open(args.settings, 'rt') as f:
+                self.settings_dict = yaml.load(f)
+        except IOError:
+            pass
+        # all {var} will try to repalced.
+        pattern = re.compile(r'{(.*?)}')
+        yaml.add_implicit_resolver("!uservar", pattern)
+
+        def userVar_sub(matchobj):
+            if matchobj.group(1) in self.settings:
+                return self.settings[matchobj.group(1)]
+            else :
+                return matchobj.group(0)
+
+        def uservar_constructor(loader, node):
+            value = loader.construct_scalar(node)
+            return re.sub(pattern, userVar_sub, value)
+
+        yaml.add_constructor("!uservar", uservar_constructor)
+
+        if type(args.file) is not dict:
             try:
-                with open(projects_file, 'rt') as f:
+                with open(args.file, 'rt') as f:
                     self.projects_dict = yaml.load(f)
             except IOError:
-               raise IOError("The main progen projects file %s doesn't exist." % projects_file)
+                raise IOError("The main progen projects file %s doesn't exist." % args.file)
         else:
-            self.projects_dict = projects_file
+            self.projects_dict = args.file
         self.workspaces = {}
         self.settings = ProjectSettings()
 
