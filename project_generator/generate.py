@@ -21,23 +21,23 @@ class Generator:
     def __init__(self, args):
         # first read all project settings, then replace project.yaml's variables.
         try:
-            with open(args.settings, 'rt') as f:
-                self.settings_dict = yaml.load(f)
+            with open(args.prop, 'rt') as f:
+                self.properties = yaml.load(f)
         except IOError:
             pass
         # all {var} will try to repalced.
-        pattern = re.compile(r'{(.*?)}')
+        pattern = re.compile(r'^(.*){(.*?)}(.*)$')
         yaml.add_implicit_resolver("!uservar", pattern)
 
         def userVar_sub(matchobj):
-            if matchobj.group(1) in self.settings:
-                return self.settings[matchobj.group(1)]
+            if matchobj.group(1) in self.properties:
+                return self.properties[matchobj.group(1)]
             else :
                 return matchobj.group(0)
 
         def uservar_constructor(loader, node):
             value = loader.construct_scalar(node)
-            return re.sub(pattern, userVar_sub, value)
+            return re.sub(r'{(.*?)}', userVar_sub, value)
 
         yaml.add_constructor("!uservar", uservar_constructor)
 
@@ -54,6 +54,7 @@ class Generator:
 
         if 'settings' in self.projects_dict:
             self.settings.update(self.projects_dict['settings'])
+        self.settings.properties = self.properties
 
     def generate(self, name=''):
         found = False

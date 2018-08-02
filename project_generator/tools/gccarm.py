@@ -26,7 +26,7 @@ class MakefileGccArm(MakefileTool):
 
     @staticmethod
     def get_toolnames():
-        return ['make_gcc_arm']
+        return ['gcc_arm']
 
     @staticmethod
     def get_toolchain():

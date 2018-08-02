@@ -43,7 +43,7 @@ def setup(subparser):
     subparser.add_argument(
         "-p", "--project", help="Project to be generated", default = '')
     subparser.add_argument(
-        "-s", "--settings", help="Special target used to generated", default = 'settings.yaml')
+        "-s", "--prop", help="Special properties used for generated", default = 'properties.yaml')
     subparser.add_argument(
         "-t", "--tool", help="Create project files for provided tool",
         type=argparse_string_type(str.lower, False), choices=list(ToolsSupported.TOOLS_DICT.keys()) + list(ToolsSupported.TOOLS_ALIAS.keys()))

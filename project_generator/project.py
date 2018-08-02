@@ -133,7 +133,7 @@ class ProjectTemplate:
 
     @staticmethod
     def _get_common_data_template():
-        """ Data for tool specific """
+        """ Data for common """
 
         data_template = {
             'includes': [],      # include files/folders
@@ -205,7 +205,15 @@ class Project:
                             bool(self.project['tool_specific'][tool_name])
                         except KeyError:
                             self.project['tool_specific'][tool_name] = ProjectTemplate.get_project_template(self.name, OUTPUT_TYPES['exe'])
-                        self._set_project_attributes(tool_name, self.project['tool_specific'][tool_name], project_data['tool_specific'])
+                        # Must process core specail
+                        for key in project_data['tool_specific'][tool_name]:
+                            if key.startswith("core_"):
+                                if key.lower() == "core_"+self.settings.properties['core'].lower():
+                                    self._set_project_attributes(key, self.project['tool_specific'][tool_name], project_data['tool_specific'][tool_name])
+                            else:
+                                self._set_project_attributes(key, self.project['tool_specific'][tool_name], project_data['tool_specific'][tool_name])
+                                
+                        #self._set_project_attributes(tool_name, self.project['tool_specific'][tool_name], project_data['tool_specific'])
         self.generated_files = {}
 
     @staticmethod
@@ -437,6 +445,7 @@ class Project:
         # Merge common project data with tool specific data
         self.project['export']['source_paths'] += self._get_tool_data('source_paths', tool_keywords)
         self.project['export']['include_paths'] += self._get_tool_data('include_paths', tool_keywords)
+        self.project['export']['includes'] += self._get_tool_data('includes', tool_keywords)
         self.project['export']['linker_file'] =  self.project['export']['linker_file'] or self._get_tool_data('linker_file', tool_keywords)
         self.project['export']['macros'] += self._get_tool_data('macros', tool_keywords)
         self.project['export']['template'] = self._get_tool_data('template', tool_keywords)
