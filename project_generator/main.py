@@ -16,6 +16,7 @@ import argparse
 import os
 import logging
 
+debug = False
 import pkg_resources
 
 from .commands import build, clean, generate, init, list_projects
@@ -38,7 +39,7 @@ def main():
                         help='Decrease the verbosity of the output (repeat for more verbose output)')
 
     parser.add_argument("--version", action='version',
-                        version=pkg_resources.require("project_generator")[0].version, help="Display version")
+                        version="DEBUG" if debug else pkg_resources.require("project_generator")[0].version, help="Display version")
 
     subparsers = parser.add_subparsers(help='commands')
 

@@ -46,7 +46,7 @@ class EclipseGnuARM(Tool, Exporter, Builder):
 
     @staticmethod
     def get_toolnames():
-        return ['eclipse_make_gcc_arm', 'gcc_arm']
+        return ['eclipse_make_gcc_arm', 'gnu_mcu_eclipse']
 
     @staticmethod
     def get_toolchain():
