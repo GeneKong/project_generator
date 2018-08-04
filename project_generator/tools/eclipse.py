@@ -23,9 +23,9 @@ from .tool import Tool, Builder, Exporter
 from .gccarm import MakefileGccArm
 from ..util import SOURCE_KEYS
 
-logger = logging.getLogger('progen.tools.eclipse')
+logger = logging.getLogger('progen.tools.eclipse_make_gcc_arm')
 
-class EclipseGnuARM(Tool, Exporter, Builder):
+class EclipseMakeGccARM(Tool, Exporter, Builder):
 
     file_types = {'cpp': 1, 'c': 1, 's': 1, 'obj': 1, 'lib': 1, 'h': 1}
 
@@ -46,7 +46,7 @@ class EclipseGnuARM(Tool, Exporter, Builder):
 
     @staticmethod
     def get_toolnames():
-        return ['eclipse_make_gcc_arm', 'gnu_mcu_eclipse']
+        return ['eclipse_make_gcc_arm']
 
     @staticmethod
     def get_toolchain():

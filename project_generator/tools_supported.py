@@ -15,7 +15,8 @@
 from .tools.iar import IAREmbeddedWorkbench
 from .tools.uvision import Uvision, Uvision5
 from .tools.coide import Coide
-from .tools.eclipse import EclipseGnuARM
+from .tools.eclipse import EclipseMakeGccARM
+from .tools.gnu_mcu_eclipse import EclipseGnuMCU
 from .tools.gccarm import MakefileGccArm
 from .tools.makearmcc import MakefileArmcc
 from .tools.sublimetext import SublimeTextMakeGccARM
@@ -33,6 +34,7 @@ class ToolsSupported:
         'make_gcc':      'make_gcc_arm',
         'gcc_arm':       'make_gcc_arm',
         'eclipse':       'eclipse_make_gcc_arm',
+        'gnu_mcu':       'gnu_mcu_eclipse',
         'sublime':       'sublime_make_gcc_arm',
         'sublime_text':  'sublime_make_gcc_arm',
         'visual_studio': 'visual_studio_make_gcc_arm',
@@ -51,7 +53,8 @@ class ToolsSupported:
         'coide':                Coide,
         'make_gcc_arm':         MakefileGccArm,
         'make_armcc':           MakefileArmcc,
-        'eclipse_make_gcc_arm': EclipseGnuARM,
+        'eclipse_make_gcc_arm': EclipseMakeGccARM,
+        'gnu_mcu_eclipse':      EclipseGnuMCU,
         'sublime_make_gcc_arm': SublimeTextMakeGccARM,
         'gdb':                  GDB,
         'arm_none_eabi_gdb':    ARMNoneEABIGDB,
