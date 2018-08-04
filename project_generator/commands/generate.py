@@ -39,7 +39,7 @@ def run(args):
 
 def setup(subparser):
     subparser.add_argument(
-        "-f", "--file", help="YAML projects file", default='projects.yaml', type=argparse_filestring_type)
+        "-f", "--file", help="YAML projects file", default='module.yaml', type=argparse_filestring_type)
     subparser.add_argument(
         "-p", "--project", help="Project to be generated", default = '')
     subparser.add_argument(

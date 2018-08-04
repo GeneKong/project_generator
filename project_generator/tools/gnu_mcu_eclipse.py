@@ -67,9 +67,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_mfpu_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in MFPU_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.MFPU_COMMAND2ID:
             trip_cmd = "default"
-        return MFPU_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.MFPU_COMMAND2ID[trip_cmd]
     
     FPUABI_COMMAND2ID = { 
         "":"default",
@@ -81,9 +81,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_fpuabi_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in FPUABI_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.FPUABI_COMMAND2ID:
             trip_cmd = ""
-        return FPUABI_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.FPUABI_COMMAND2ID[trip_cmd]
     
     MCPU_COMMAND2ID = {
         "-mcpu=arm1020e":"arm1020e",
@@ -184,9 +184,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_mcpu_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in MCPU_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.MCPU_COMMAND2ID:
             trip_cmd = "-mcpu=cortex-m3"
-        return MCPU_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.MCPU_COMMAND2ID[trip_cmd]
     
     OPTIMIZATIONLEVEL_COMMAND2ID = { 
         "-O0":"none",
@@ -200,9 +200,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_optimization_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in OPTIMIZATIONLEVEL_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.OPTIMIZATIONLEVEL_COMMAND2ID:
             trip_cmd = "-O2"
-        return OPTIMIZATIONLEVEL_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.OPTIMIZATIONLEVEL_COMMAND2ID[trip_cmd]
     
     DEBUGLEVEL_COMMAND2ID = { 
         "default":"none",
@@ -214,9 +214,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_debug_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in DEBUGLEVEL_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.DEBUGLEVEL_COMMAND2ID:
             trip_cmd = "default"
-        return DEBUGLEVEL_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.DEBUGLEVEL_COMMAND2ID[trip_cmd]
     
     INSTRUCTIONSET_COMMAND2ID = { 
         "":"default",
@@ -227,9 +227,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_instructionset_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in INSTRUCTIONSET_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.INSTRUCTIONSET_COMMAND2ID:
             trip_cmd = ""
-        return INSTRUCTIONSET_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.INSTRUCTIONSET_COMMAND2ID[trip_cmd]
     
     UNALIGNEDACCESS_COMMAND2ID = { 
         "":"default",
@@ -240,9 +240,9 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     @staticmethod
     def get_unalignedaccess_gnuarmeclipse_id(command):
         trip_cmd = command.strip().lower()
-        if trip_cmd not in UNALIGNEDACCESS_COMMAND2ID:
+        if trip_cmd not in EclipseGnuMCU.UNALIGNEDACCESS_COMMAND2ID:
             trip_cmd = ""
-        return UNALIGNEDACCESS_COMMAND2ID[trip_cmd]
+        return EclipseGnuMCU.UNALIGNEDACCESS_COMMAND2ID[trip_cmd]
     
     # all bool gnu mcu eclipse options store here
     GNU_MCU_BOOL_COMMAND2OPTIONS = {
@@ -255,7 +255,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         "-Wextra":"false",
         "-Wlogical-op":"false",
         "-Wagreggate-return":"false",
-        "-Wfloat-equal":"true",
+        "-Wfloat-equal":"false",
         "-Wabi":"false",
         "-fno-exceptions":"false",
         "-fno-rtti":"false",
@@ -299,7 +299,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         output = copy.deepcopy(self.generated_project)
         data_for_gnu_mcu = self.workspace.copy()
 
-        self.exporter.process_data_for_gnu_mcufile(data_for_gnu_mcu)   
+        self.exporter.process_data_for_makefile(data_for_gnu_mcu)   
 
         # process path format in windows
         for name in ['linker_file','toolchain_bin_path',
@@ -321,6 +321,39 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
             expanded_dic['groups'][group] = []
         self._iterate(self.workspace, expanded_dic)
 
+        expanded_dic["options"] = {}
+        expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_optimization_gnuarmeclipse_id("")
+        expanded_dic["options"]["debug"] = EclipseGnuMCU.get_debug_gnuarmeclipse_id("")
+        expanded_dic["options"]["mcu"] = EclipseGnuMCU.get_mcpu_gnuarmeclipse_id("")
+        expanded_dic["options"]["instructionset"] = EclipseGnuMCU.get_instructionset_gnuarmeclipse_id("")
+        expanded_dic["options"]["fpuabi"] = EclipseGnuMCU.get_fpuabi_gnuarmeclipse_id("")
+        expanded_dic["options"]["fpu"] = EclipseGnuMCU.get_mfpu_gnuarmeclipse_id("")
+        expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id("")
+        
+        for name in ["common_flags", "ld_flags", "c_flags", "cxx_flags", "asm_flags"] :
+            for flag in data_for_gnu_mcu[name] :
+                if flag.startswith("-O") :
+                    expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_optimization_gnuarmeclipse_id(flag)
+                elif flag.startswith("-g") :
+                    expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_debug_gnuarmeclipse_id(flag)
+                elif flag.startswith("-mcpu=") :
+                    expanded_dic["options"]["mcu"] = EclipseGnuMCU.get_mcpu_gnuarmeclipse_id(flag)
+                elif flag in ["-mthumb", "-marm"] :
+                    expanded_dic["options"]["mcu"] = EclipseGnuMCU.get_instructionset_gnuarmeclipse_id(flag)
+                elif flag.starswith("-mfloat-abi=") :
+                    expanded_dic["options"]["fpuabi"] = EclipseGnuMCU.get_fpuabi_gnuarmeclipse_id(flag)
+                elif flag.starswith("-mfpu=") :
+                    expanded_dic["options"]["fpu"] = EclipseGnuMCU.get_mfpu_gnuarmeclipse_id(flag)
+                elif flag in ["-munaligned-access","-mno-unaligned-access"]:
+                    expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id(flag)
+                elif flag in EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS:
+                    EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
+                else:
+                    # TODO process others flags
+                    pass
+                            
+        expanded_dic["options"]["value"] = EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS
+        
         # Project file
         project_path, output['files']['cproj'] = self.gen_file_jinja(
             'gnu_mcu_eclipse.cproject.tmpl', expanded_dic, '.cproject', data_for_gnu_mcu['output_dir']['path'])
