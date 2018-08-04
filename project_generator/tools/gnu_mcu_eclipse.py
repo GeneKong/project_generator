@@ -1,4 +1,4 @@
-# Copyright 2014-2015 0xc0170
+# Copyright 2017-2020
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         'path': '',
         'files': {
             'proj_file': '',
-            'cproj': '',
-            'makefile': '',
+            'cproj': ''
         }
     }
     
@@ -266,8 +265,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         }
     
     #Other debug flags, Other Warning flag, Other Optimization flag
-    
-    
+            
     def __init__(self, workspace, env_settings):
         self.definitions = 0
         self.exporter = MakefileGccArm(workspace, env_settings)
@@ -299,27 +297,24 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         """ Processes groups and misc options specific for eclipse, and run generator """
 
         output = copy.deepcopy(self.generated_project)
-        data_for_make = self.workspace.copy()
+        data_for_gnu_mcu = self.workspace.copy()
 
-        self.exporter.process_data_for_makefile(data_for_make)   
+        self.exporter.process_data_for_gnu_mcufile(data_for_gnu_mcu)   
 
         # process path format in windows
         for name in ['linker_file','toolchain_bin_path',
                      'lib_paths', 'include_paths', 'source_paths',
                      'source_files_c', 'source_files_cpp', 'source_files_s']:
-            if type(data_for_make[name]) == list:
+            if type(data_for_gnu_mcu[name]) == list:
                 new_paths = []
-                for path in data_for_make[name]:
+                for path in data_for_gnu_mcu[name]:
                     new_paths.append(path.replace('\\', '/'))
-                data_for_make[name] = new_paths
-            elif data_for_make[name]:
-                data_for_make[name] = data_for_make[name].replace('\\', '/')
-
-        output['path'], output['files']['makefile'] = \
-            self.gen_file_jinja('makefile_gcc.tmpl', data_for_make, 'Makefile', data_for_make['output_dir']['path'])
+                data_for_gnu_mcu[name] = new_paths
+            elif data_for_gnu_mcu[name]:
+                data_for_gnu_mcu[name] = data_for_gnu_mcu[name].replace('\\', '/')
 
         expanded_dic = self.workspace.copy()
-        expanded_dic['rel_path'] = data_for_make['output_dir']['rel_path']
+        expanded_dic['rel_path'] = data_for_gnu_mcu['output_dir']['rel_path']
         groups = self._get_groups(expanded_dic)
         expanded_dic['groups'] = {}
         for group in groups:
@@ -328,10 +323,10 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
 
         # Project file
         project_path, output['files']['cproj'] = self.gen_file_jinja(
-            'eclipse_makefile.cproject.tmpl', expanded_dic, '.cproject', data_for_make['output_dir']['path'])
+            'gnu_mcu_eclipse.cproject.tmpl', expanded_dic, '.cproject', data_for_gnu_mcu['output_dir']['path'])
 
         project_path, output['files']['proj_file'] = self.gen_file_jinja(
-            'eclipse.project.tmpl', expanded_dic, '.project', data_for_make['output_dir']['path'])
+            'eclipse.project.tmpl', expanded_dic, '.project', data_for_gnu_mcu['output_dir']['path'])
         return output
 
     def get_generated_project_files(self):
