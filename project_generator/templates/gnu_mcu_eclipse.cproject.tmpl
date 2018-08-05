@@ -64,6 +64,7 @@
 									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
 									{% endfor %}
 								</option>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other.1608904997" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other" useByScannerDiscovery="false" value="{{options.other_asm_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.319632072" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									{% for path in include_paths %} 
 									<listOptionValue builtIn="false" value="&quot;{{path}}&quot;"/> 
@@ -77,6 +78,7 @@
 									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
 									{% endfor %}
 								</option>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other.989070667" name="Other compiler flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other" useByScannerDiscovery="true" value="{{options.other_c_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.318080057" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									{% for path in include_paths %} 
 									<listOptionValue builtIn="false" value="&quot;{{path}}&quot;"/> 
@@ -90,6 +92,7 @@
 									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
 									{% endfor %}
 								</option>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other.1761495060" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other" useByScannerDiscovery="true" value="{{options.other_cxx_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths.330913846" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									{% for path in include_paths %} 
 									<listOptionValue builtIn="false" value="&quot;{{path}}&quot;"/> 
@@ -108,6 +111,7 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.2081009874" name="GNU ARM Cross C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections.1874929851" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections" value="{{options.value['-Xlinker --gc-sections']}}" valueType="boolean"/>
 							</tool>
+                            <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other.549974901" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other" useByScannerDiscovery="false" value="{{options.other_ld_flags}}" valueType="string"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver.265382493" name="GNU ARM Cross Archiver" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash.944678057" name="GNU ARM Cross Create Flash Image" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting.1061314030" name="GNU ARM Cross Create Listing" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting">
