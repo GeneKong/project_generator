@@ -17,6 +17,7 @@ import locale
 import shutil
 import string
 import operator
+import copy
 
 from functools import reduce
 
@@ -61,23 +62,42 @@ def merge_recursive(*args):
         return output
     else:
         return reduce(operator.add, args)
-
+    
+def merge_without_override(dest, src):
+    """
+    process list as a single object.
+    """
+    for key, value in src.items():
+        if type(value) is dict:
+            if key in dest:
+                merge_without_override(dest[key], value)
+            else:
+                dest[key] = copy.deepcopy(value)
+        else:
+            if key not in dest:
+                dest[key] = copy.deepcopy(value)
+            else:
+                pass
+            
+def merge_with_override(dest, src):
+    """
+    process list as a single object.
+    """
+    for key, value in src.items():
+        if type(value) is dict:
+            if key in dest:
+                merge_with_override(dest[key], value)
+            else:
+                dest[key] = copy.deepcopy(value)
+        else:
+            dest[key] = copy.deepcopy(value)
+            
 def flatten(S):
     if S == []:
         return S
     if isinstance(S[0], list):
         return flatten(S[0]) + flatten(S[1:])
     return S[:1] + flatten(S[1:])
-
-def load_yaml_records(yaml_files):
-    dictionaries = []
-    for yaml_file in yaml_files:
-        try:
-            f = open(yaml_file, 'rt')
-            dictionaries.append(yaml.load(f))
-        except IOError:
-           raise IOError("The file %s referenced in main yaml doesn't exist." % yaml_file)
-    return dictionaries
 
 class PartialFormatter(string.Formatter):
     def get_field(self, field_name, args, kwargs):

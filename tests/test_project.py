@@ -23,22 +23,37 @@ from project_generator.settings import ProjectSettings
 from project_generator.util import merge_recursive
 
 project_1_yaml = {
-    'common': {
+    'name': 'project_1',
+    'type': 'exe',    
+    'tools_supported': ['iar_arm', 'uvision', 'coide', 'unknown'],
+    'files': {
         'sources': { 'sources_dict' : ['test_workspace/main.cpp']
         },
         'includes': ['test_workspace/header1.h'],
+    },
+    'common': {
+        'flags': ['-mcpu=cortex-m4', '-mthumb'],
         'macros': ['MACRO1', 'MACRO2', None],
-        'target': ['target1'],
-        'core': ['core1'],
-        'tools_supported': ['iar_arm', 'uvision', 'coide', 'unknown'],
-        'output_type': ['exe'],
-        'debugger': ['debugger_1'],
-        'linker_file': ['test_workspace/linker.ld'],
+    },
+    'cxxcompile': {
+        'flags': ['-std=gnu++11']
+    },
+    'linker': {
+        'search_paths': ['test_workspace'],
+        'script_files': ['linker.ld'],
+        'libraries': ['feThirdLib']
+    },
+    'required': {
+        'project_2' : {},
+        'project_3' : {}
     }
 }
 
 project_2_yaml = {
-    'common': {
+    'name': 'project_2',
+    'type': 'lib',    
+    'tools_supported': ['iar_arm', 'uvision', 'coide', 'unknown'],
+    'files': {
         'sources': { 
             'sources_dict' : ['test_workspace/file2.cpp'],
             'sources_dict2' : ['test_workspace/file3.cpp']
@@ -46,12 +61,26 @@ project_2_yaml = {
         'includes':  {
             'include_dict' : ['test_workspace/header2.h'],
             'include_dict2' : ['test_workspace/header3.h']
-        },
+        }
+    },
+    'common':
+    {
         'macros': ['MACRO2_1', 'MACRO2_2'],
     }
 }
 
-projects_yaml = {
+project_3_yaml = {
+    'name': 'project_3',
+    'type': 'src',
+    'files': {
+        'includes':  {
+            'include_dict' : ['test_workspace/header4.h'],
+            'include_dict2' : ['test_workspace/header5.h']
+        }
+    }
+}
+
+projects_yaml = {    
     'projects': {
         'project_1' : ['test_workspace/project_1.yaml', 'test_workspace/project_2.yaml']
     },

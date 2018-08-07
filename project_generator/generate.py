@@ -11,22 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import yaml,re
+import yaml,re,copy
 
 from .settings import ProjectSettings
-from .util import flatten, uniqify, load_yaml_records
+from .util import flatten, uniqify, merge_without_override
 from .project import *
 
 class Generator:
-    def __init__(self, args):
-        # first read all project settings, then replace project.yaml's variables.
-        try:
-            with open(args.prop, 'rt') as f:
-                self.properties = yaml.load(f)
-        except IOError:
-            pass
+    def __init__(self, source):
+        self.properties = {}        
+        self.basepath = os.path.dirname(source)
+        
         # all {var} will try to repalced.
-        pattern = re.compile(r'^(.*){(.*?)}(.*)$')
+        pattern = re.compile(r'^(.*)\${(.*?)}(.*)$')
         yaml.add_implicit_resolver("!uservar", pattern)
 
         def userVar_sub(matchobj):
@@ -37,25 +34,26 @@ class Generator:
 
         def uservar_constructor(loader, node):
             value = loader.construct_scalar(node)
-            return re.sub(r'{(.*?)}', userVar_sub, value)
+            return re.sub(r'\${(.*?)}', userVar_sub, value)
 
         yaml.add_constructor("!uservar", uservar_constructor)
 
-        if type(args.file) is not dict:
-            try:
-                with open(args.file, 'rt') as f:
+        try:
+            with open(source, 'rt') as f:
+                self.projects_dict = yaml.load(f)
+                if 'properties' in self.projects_dict:
+                    self.properties = self.projects_dict['properties']
+                    f.seek(0)
                     self.projects_dict = yaml.load(f)
-            except IOError:
-                raise IOError("The main progen projects file %s doesn't exist." % args.file)
-        else:
-            self.projects_dict = args.file
-        self.workspaces = {}
+        except IOError:
+            raise IOError("The main progen projects file %s doesn't exist." % source)
         self.settings = ProjectSettings()
+        # origin properties backup in settings
+        self.settings.properties = copy.deepcopy(self.properties)
 
         if 'settings' in self.projects_dict:
             self.settings.update(self.projects_dict['settings'])
-        self.settings.properties = self.properties
-
+        
     def generate(self, name=''):
         found = False
         if name != '':
@@ -64,33 +62,37 @@ class Generator:
                 if name in self.projects_dict['projects'].keys():
                     found = True
                     records = self.projects_dict['projects'][name]
-                    yield Project(name, load_yaml_records(uniqify(flatten(records))), self.settings)
-            if 'workspaces' in self.projects_dict:
-                workspace_settings = {}
-                if name in self.projects_dict['workspaces'].keys():
-                    found = True
-                    records = self.projects_dict['workspaces'][name]
-                    if 'settings' in records:
-                        workspace_settings = records['settings'] 
-                    projects = [Project(project, load_yaml_records(uniqify(flatten(self.projects_dict['projects'][project]))), self.settings, name) for project in records['projects']]
-                    self.workspaces[name] = ProjectWorkspace(name, projects, self.settings, workspace_settings)
-                    yield self.workspaces[name]
+                    yield Project(name, records,  self.settings, self)
+                    self.reset_properties()
         else:
             if 'projects' in self.projects_dict:
                 found = True
                 for name, records in sorted(self.projects_dict['projects'].items(),
                                             key=lambda x: x[0]):
-                    yield Project(name, load_yaml_records(uniqify(flatten(records))), self.settings)
-            if 'workspaces' in self.projects_dict:
-                found = True
-                for name, records in sorted(self.projects_dict['workspaces'].items(),
-                                            key=lambda x: x[0]):
-                    workspace_settings = {}
-                    if 'settings' in records:
-                        workspace_settings = records['settings']
-                    projects = [Project(project, load_yaml_records(uniqify(flatten(self.projects_dict['projects'][project]))), self.settings, name) for project in records['projects']]
-                    self.workspaces[name] = ProjectWorkspace(name, projects, self.settings, workspace_settings)
-                    yield self.workspaces[name]
+                    yield Project(name, records, self.settings, self)
+                    self.reset_properties()
 
         if not found:
             logging.error("You specified an invalid project name.")
+
+    def reset_properties(self):
+        """
+        reset root project properties
+        """
+        self.properties = copy.deepcopy(self.settings.properties)
+        
+    def merge_properties_without_override(self, prop_dict):
+        """
+        update properties when parser sub-project and required project
+        """
+        for key, value in prop_dict.items():
+            if type(value) is dict:
+                if key in self.properties:
+                    merge_without_override(self.properties[key], value)
+                else:
+                    self.properties[key] = value
+            elif key not in self.properties:
+                self.properties[key] = value
+                
+        
+        

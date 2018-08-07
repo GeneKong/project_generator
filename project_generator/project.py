@@ -26,13 +26,21 @@ from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXT
 logger = logging.getLogger('progen.project')
 
 class ProjectWorkspace:
-    """ Represents a workspace (multiple projects) """
-
-    def __init__(self, name, projects, settings, workspace_settings):
+    """ Represents a workspace, application projects must be in a workspace
+        Yaml data available are:
+        settings:
+            export_dir: str
+            build_dir: str
+        toolchains:
+            gcc: str
+            armcc: str
+        projects: []
+    """
+    def __init__(self, name, projects, settings, toolchains):
         self.name = name
         self.projects = projects
         self.settings = settings
-        self.workspace_settings = workspace_settings
+        self.toolchains = toolchains
         self.generated_files = {}
 
     def generate(self, tool, copied=False, copy=False):
@@ -116,19 +124,48 @@ class ProjectWorkspace:
 class ProjectTemplate:
     """ Public data which can be set in yaml files
         Yaml data available are:
-            'build_dir' : build_dir,    # Build output path
-            'debugger' : debugger,      # Debugger
-            'export_dir': '',           # Export directory path
-            'includes': [],             # include paths
-            'linker_file': None,        # linker script file
+            *** project profile ***
             'name': name,               # project name
-            'macros': [],               # macros
-            'misc': {},                 # misc settings related to tools
-            'output_type': output_type, # output type, default - exe
-            'sources': [],              # source files/folders
-            'target': '',               # target
-            'template' : [],            # tool template
-            'tools_supported': [],      # Tools which are supported,
+            'type': type,               # project type
+            'templates': [],            # templates
+            'required': {},             # required project/lib/src
+            
+            *** dimensisons/favors ***
+            'favor_dimensions' : [xx, yy]
+            'project_favors': {
+                '' : {
+                    'dimension' : xx
+                    *** properties ***
+                    'properties': {}
+                    *** files ***
+                    *** compile options ***
+                }                
+            }
+            
+            *** files ***
+            'includes': {},
+            'sources': {},
+            
+            *** compile options ***
+            'common': {
+                    'flags': []
+                    'macros': []
+                    },
+            'assemble': {
+            
+            },
+            'ccompile': {
+            },
+            'cxxcompile': {
+            },
+            'linker': {
+                'flags':[],
+                'script_files': []
+                'search_paths': []
+                'libraries': []
+            },
+            *** properties ***
+            'properties': {}
     """
 
     @staticmethod
@@ -136,20 +173,32 @@ class ProjectTemplate:
         """ Data for common """
 
         data_template = {
-            'includes': [],      # include files/folders
-            'linker_file': '',   # linker script file
-            'macros': [],        # macros
-            'sources': [],       # source files/folders
-        }
-        return data_template
-
-    @staticmethod
-    def _get_tool_specific_data_template():
-        """ Data for tool specific """
-
-        data_template = {
-            'misc': {},     # misc settings related to tools
-            'template': [], # template project file
+            'common': {
+                'flags': [],
+                'macros': []
+            },
+            'assemble': {
+                'flags': [],
+                'macros': []
+            },
+            'ccompile': {
+                'flags': [],
+                'macros': []
+            },
+            'cxxcompile': {
+                'flags': [],
+                'macros': []
+            },
+            'linker': {
+                'flags':[],
+                'script_files': [],
+                'search_paths': [],
+                'libraries': []
+            },
+            'files': {
+                'includes': {},
+                'sources': {}
+            }
         }
         return data_template
 
@@ -162,60 +211,87 @@ class ProjectTemplate:
             'debugger' : debugger,    # Debugger
             'export_dir': '',         # Export directory path
             'name': name,             # project name
-            'output_type': output_type, # output type, default - exe
-            'target': '',             # target
-            'tools_supported': [],    # Tools which are supported,
+            'type': output_type,      # output type, default - exe
+            'templates': [],          # templates
+            'required': [],           # Tools which are supported,
         }
         project_template.update(ProjectTemplate._get_common_data_template())
-        project_template.update(ProjectTemplate._get_tool_specific_data_template())
         return project_template
 
 class Project:
 
     """ Represents a project, which can be formed of many yaml files """
 
-    def __init__(self, name, project_dicts, settings, workspace_name=None):
+    def __init__(self, name, project_dicts, settings, gen, parent = None):
         """ Initialise a project with a yaml file """
 
-        assert type(project_dicts) is list, "Project records/dics must be a list" % project_dicts 
+        assert type(project_dicts) is dict, "Project records/dics must be a dict" % project_dicts 
 
         self.settings = settings
         self.name = name
-        self.workspace_name = workspace_name
-        self.project = {}
-        self.project['common'] = {}
-        self.project['export'] = {} # merged common and tool
-        self.project['tool_specific'] = {}
-        self.project['common'] = ProjectTemplate.get_project_template(self.name, OUTPUT_TYPES['exe'])
+        self.parent = parent
+        self.basepath = os.path.sep.join([gen.basepath, name])
+        if 'favor' in project_dicts:
+            self.favors = project_dicts['favor']
+        else:
+            self.favors = {}
+        if 'properties' in project_dicts:
+            gen.merge_properties_without_override(project_dicts['properties'])
+            
+        self.project = ProjectTemplate.get_project_template(self.name)
+        
+        try:
+            with open(os.path.sep.join([self.basepath, "module.yaml"]), 'rt') as f:
+                need_reload = False
+                self.src_dicts = yaml.load(f)
+                if 'properties' in self.src_dicts:
+                    gen.merge_properties_without_override(self.src_dicts['properties'])
+                    need_reload = True
+                if 'favor_dimensions' in self.src_dicts:
+                    #process favor context
+                    for dim in self.src_dicts['favor_dimensions']:
+                        if dim not in self.favors:
+                            raise NameError ("%s in favor_dimensions not set for project %s." % (dim, name))
+                        else:
+                            favor = self.src_dicts['project_favors'][self.favors[dim]]
+                            if favor['dimension'] != dim :
+                                raise NameError ("project_favors %s's dimension:%s, is not %s." %
+                                                 (self.favors[dim], favor['dimension'], dim))
+                            for key in favor :
+                                if key == 'properties':
+                                    gen.merge_properties_without_override(favor['properties'])
+                                    need_reload = True
+                                elif key == 'dimension':
+                                    pass
+                                elif key in self.project:
+                                    self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], favor[key]))  
+                if need_reload:
+                    f.seek(0)
+                    self.src_dicts = yaml.load(f)
+        except IOError:
+            raise IOError("The module.yaml in project:%s doesn't exist." % self.name)
 
-        # fill common + tool_specific dics from the project_dicts
-        for project_data in project_dicts:
-            # project_data might be empty yaml - None
-            if project_data:
-                if 'common' in project_data:
-                    self._set_project_attributes('common', self.project['common'], project_data)
-                if 'tool_specific' in project_data:
-                    for tool_name, tool_settings in project_data['tool_specific'].items():
-                        # if there's no valid tool name, skip that yaml file and report to a user
-                        if tool_name not in ToolsSupported().get_supported():
-                            logger.error("Project data %s contain non-valid tool: %s" % (project_data, tool_name))
-                            continue
-                        try:
-                            # if dict does not exist, we initialize it
-                            bool(self.project['tool_specific'][tool_name])
-                        except KeyError:
-                            self.project['tool_specific'][tool_name] = ProjectTemplate.get_project_template(self.name, OUTPUT_TYPES['exe'])
-                        # Must process core specail
-                        for key in project_data['tool_specific'][tool_name]:
-                            if key.startswith("core_"):
-                                if key.lower() == "core_"+self.settings.properties['core'].lower():
-                                    self._set_project_attributes(key, self.project['tool_specific'][tool_name], project_data['tool_specific'][tool_name])
-                            else:
-                                self._set_project_attributes(key, self.project['tool_specific'][tool_name], project_data['tool_specific'][tool_name])
-                                
-                        #self._set_project_attributes(tool_name, self.project['tool_specific'][tool_name], project_data['tool_specific'])
+        for key in self.src_dicts:
+            if key in ['favor_dimensions', 'project_favors']:
+                continue
+            elif key == 'files':
+                for ikey in self.project[key]:                
+                    if ikey in self.src_dicts[key]:
+                        self._process_files_item(ikey)
+            elif key in self.project:
+                self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], self.src_dicts[key]))
+                
         self.generated_files = {}
-
+    
+    def _process_files_item(self, key):
+        if type(self.src_dicts['files'][key]) is list:
+            self.project['files'][key].setdefault('default',[]).extend(self.src_dicts['files'][key])
+        else:
+            self.project['files'][key] = Project._dict_elim_none(
+                merge_recursive(
+                    self.project['files'][key],
+                    self.src_dicts['files'][key]))
+                    
     @staticmethod
     def _list_elim_none(list_to_clean):
         return [l for l in list_to_clean if l]
@@ -253,6 +329,7 @@ class Project:
                         else:
                             if data:
                                 destination[attribute] = data
+                                
 
     def _set_internal_common_data(self):
         # process here includes, sources and set all internal data related to them
