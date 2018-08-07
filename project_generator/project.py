@@ -213,7 +213,7 @@ class ProjectTemplate:
             'name': name,             # project name
             'type': output_type,      # output type, default - exe
             'templates': [],          # templates
-            'required': [],           # Tools which are supported,
+            'required': {},           # Tools which are supported,
         }
         project_template.update(ProjectTemplate._get_common_data_template())
         return project_template
@@ -280,7 +280,10 @@ class Project:
                         self._process_files_item(ikey)
             elif key in self.project:
                 self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], self.src_dicts[key]))
-                
+        
+        #Process required project
+        for subproj in self.project['required']:
+            pass
         self.generated_files = {}
     
     def _process_files_item(self, key):
@@ -333,9 +336,9 @@ class Project:
 
     def _set_internal_common_data(self):
         # process here includes, sources and set all internal data related to them
-        for files in self.project['common']['sources']:
+        for files in self.project['files']['sources']:
             self._process_source_files(files)
-        for files in self.project['common']['includes']:
+        for files in self.project['files']['includes']:
             self._process_include_files(files)
 
     def _set_internal_tool_data(self, tool_keywords):
@@ -490,8 +493,6 @@ class Project:
         location = PartialFormatter().format(location_format, **{
             'project_name': self.name,
             'tool': tool,
-            'target': self.project['export']['target'],
-            'workspace': self.workspace_name or '.'
         })
 
         self.project['export']['output_dir']['path'] = os.path.normpath(location)
