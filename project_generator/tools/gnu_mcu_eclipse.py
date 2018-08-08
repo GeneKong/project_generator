@@ -330,6 +330,10 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         expanded_dic["options"]["fpu"] = EclipseGnuMCU.get_mfpu_gnuarmeclipse_id("")
         expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id("")
         
+        c_flags = []
+        cxx_flags = []
+        asm_flags = []
+        ld_flags = []
         for name in ["common_flags", "ld_flags", "c_flags", "cxx_flags", "asm_flags"] :
             for flag in data_for_gnu_mcu[name] :
                 if flag.startswith("-O") :
@@ -348,11 +352,24 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
                     expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id(flag)
                 elif flag in EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS:
                     EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
+                elif name == "common_flags" :
+                    c_flags.append(flag)
+                    cxx_flags.append(flag)
+                    asm_flags.append(flag)
+                elif name == "c_flags" :
+                    c_flags.append(flag)
+                elif name == "cxx_flags" :
+                    cxx_flags.append(flag)
+                elif name == "asm_flags" :
+                    asm_flags.append(flag)
                 else:
-                    # TODO process others flags
-                    pass
-                            
+                    ld_flags.append(flag)
+
         expanded_dic["options"]["value"] = EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS
+        expanded_dic["options"]["other_ld_flags"] = " ".join(ld_flags)
+        expanded_dic["options"]["other_c_flags"]  = " ".join(c_flags)
+        expanded_dic["options"]["other_cxx_flags"] = " ".join(cxx_flags)
+        expanded_dic["options"]["other_asm_flags"] = " ".join(asm_flags)
         
         # Project file
         project_path, output['files']['cproj'] = self.gen_file_jinja(
