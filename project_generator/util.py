@@ -18,6 +18,7 @@ import shutil
 import string
 import operator
 import copy
+import re
 
 from functools import reduce
 
@@ -100,6 +101,28 @@ class PartialFormatter(string.Formatter):
             first, _ = field_name._formatter_field_name_split()
             val = '{' + field_name + '}', first
         return val
+    
+def fix_properties_in_context(dest, prop):
+    def userVar_sub(matchobj):
+        if matchobj.group(1) in prop:
+            return prop[matchobj.group(1)]
+        else :
+            raise SystemError("Found property:%s can be resolved." % matchobj.group(1))
+    
+    if type(dest) == dict:
+        ndest = {}
+        for k,v in dest.items():
+            ndest[k] = fix_properties_in_context(v, prop)
+        return ndest
+    elif type(dest) == list:
+        ndest = []
+        for v in dest:
+            ndest.append(fix_properties_in_context(v, prop))
+        return ndest
+    elif type(dest) == str:
+        return re.sub(r'\${(.*?)}', userVar_sub, dest)
+    else:
+        return dest
 
 def fix_paths(project_data, rel_path, extensions):
     """ Fix paths for extension list """

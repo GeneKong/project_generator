@@ -21,7 +21,7 @@ from . import argparse_filestring_type, argparse_string_type
 help = 'Generate a project record'
 
 def run(args):
-    generator = Generator(args)
+    generator = Generator(args.file)
     build_failed = False
     export_failed = False
     generated = True

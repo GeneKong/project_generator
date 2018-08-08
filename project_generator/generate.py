@@ -11,40 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import yaml,re,copy
-
+import yaml,os,copy,logging
+        
 from .settings import ProjectSettings
-from .util import flatten, uniqify, merge_without_override
-from .project import *
+from .util import fix_properties_in_context, merge_without_override
+from .project import Project
 
 class Generator:
     def __init__(self, source):
-        self.properties = {}        
         self.basepath = os.path.dirname(source)
-        
-        # all {var} will try to repalced.
-        pattern = re.compile(r'^(.*)\${(.*?)}(.*)$')
-        yaml.add_implicit_resolver("!uservar", pattern)
-
-        def userVar_sub(matchobj):
-            if matchobj.group(1) in self.properties:
-                return self.properties[matchobj.group(1)]
-            else :
-                return matchobj.group(0)
-
-        def uservar_constructor(loader, node):
-            value = loader.construct_scalar(node)
-            return re.sub(r'\${(.*?)}', userVar_sub, value)
-
-        yaml.add_constructor("!uservar", uservar_constructor)
-
+        self.properties = {}
         try:
             with open(source, 'rt') as f:
                 self.projects_dict = yaml.load(f)
                 if 'properties' in self.projects_dict:
-                    self.properties = self.projects_dict['properties']
-                    f.seek(0)
-                    self.projects_dict = yaml.load(f)
+                    self.properties = self.projects_dict['properties']                    
+                    self.projects_dict = fix_properties_in_context(self.projects_dict, self.properties)
         except IOError:
             raise IOError("The main progen projects file %s doesn't exist." % source)
         self.settings = ProjectSettings()
@@ -94,5 +76,19 @@ class Generator:
             elif key not in self.properties:
                 self.properties[key] = value
                 
-        
-        
+
+# all {var} will try to repalced, yaml can't work good for parse
+"""
+def userVar_sub(matchobj):
+    if matchobj.group(1) in Generator.properties:
+        return Generator.properties[matchobj.group(1)]
+    else :
+        return matchobj.group(0)
+
+def uservar_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    return re.sub(r'\${(.*?)}', userVar_sub, value)
+
+yaml.add_constructor("!uservar", uservar_constructor)
+yaml.add_implicit_resolver("!uservar", re.compile(r'^(.*)\${(.*?)}(.*)$'))
+"""

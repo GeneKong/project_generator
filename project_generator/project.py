@@ -21,7 +21,7 @@ import yaml
 
 from .tools_supported import ToolsSupported
 from .tools.tool import get_tool_template
-from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, SOURCE_KEYS, fix_paths, merge_without_override
+from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, SOURCE_KEYS, fix_paths, merge_without_override, fix_properties_in_context
 
 logger = logging.getLogger('progen.project')
 
@@ -147,11 +147,9 @@ class Project:
         
         try:
             with open(os.path.sep.join([self.basepath, "module.yaml"]), 'rt') as f:
-                need_reload = False
                 self.src_dicts = yaml.load(f)
                 if 'properties' in self.src_dicts:
                     gen.merge_properties_without_override(self.src_dicts['properties'])
-                    need_reload = True
                 if 'favor_dimensions' in self.src_dicts:
                     #process favor context
                     for dim in self.src_dicts['favor_dimensions']:
@@ -165,14 +163,12 @@ class Project:
                             for key in favor :
                                 if key == 'properties':
                                     gen.merge_properties_without_override(favor['properties'])
-                                    need_reload = True
                                 elif key == 'dimension':
                                     pass
                                 elif key in self.project:
                                     self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], favor[key]))  
-                if need_reload:
-                    f.seek(0)
-                    self.src_dicts = yaml.load(f)
+
+                self.src_dicts = fix_properties_in_context(self.src_dicts, gen.properties)
         except IOError:
             raise IOError("The module.yaml in project:%s doesn't exist." % self.name)
 

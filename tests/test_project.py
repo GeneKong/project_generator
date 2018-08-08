@@ -266,14 +266,19 @@ class TestProjectYAML(TestCase):
 
     def test_project_attributes(self):
         self.project._fill_export_dict('uvision')
-        assert set(self.project.export['macros']['common'] + [None]) == set(project_1_yaml['common']['macros'] + project_3_yaml['project_favors']['favor_1_2']['common']['macros']) 
-        assert set(self.project.export['include_files'].keys()) & set(['default'] + list(project_2_yaml['common']['includes'].keys()))
+        assert  set(self.project.export['macros']['common'] + [None]) == \
+                set(project_1_yaml['common']['macros'] + project_3_yaml['project_favors']['favor_1_2']['common']['macros'])
+        assert  set(self.project.sub_projects.keys()) == \
+                set([project_2_yaml['name'], project_3_yaml['name']]) 
+        assert "$" not in str(self.project.src_dicts)
 
         # no c or asm files, empty dics
-        assert self.project.export['source_files_c'] == dict()
-        assert self.project.export['source_files_s'] == dict()
+        assert "override_1_alter.c" in str(self.project.export['source_files_c'])        
+        assert "main.cpp" in str(self.project.export['source_files_cpp'])
+        assert  self.project.export['source_files_s'] == dict()
         # source groups should be equal
-        assert self.project.export['source_files_cpp'].keys() == merge_recursive(project_1_yaml['common']['sources'], project_2_yaml['common']['sources']).keys()
+        assert  set(self.project.export['source_files_cpp'].keys()) == \
+                set(['default', 'uv1', 'sources_dict'])
 
     def test_copy(self):
         # test copy method which should copy all files to generated project dir by default
@@ -282,4 +287,4 @@ class TestProjectYAML(TestCase):
 
     def test_set_output_dir_path(self):
         self.project._fill_export_dict('uvision')
-        assert self.project.export['output_dir']['path'] == os.path.join('projects', 'uvision_target1','project_1')
+        assert self.project.export['output_dir']['path'] == os.path.join('projects', 'uvision','project_1')
