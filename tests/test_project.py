@@ -31,6 +31,12 @@ project_1_yaml = {
         },
         'includes': ['src/header1.h'],
     },
+    'tool_specific': {
+        'uvision': {
+            'includes': ['src/uv1.h'],
+            'source_files_cpp': { 'uv1' : ['src/uv1.cpp']}
+        }
+    },
     'common': {
         'flags': ['-mcpu=cortex-m4', '-mthumb'],
         'macros': ['MACRO1', 'MACRO2', None],
@@ -96,6 +102,10 @@ project_3_yaml = {
         },
         'favor_1_2': {
             'dimension': 'dim_1',
+            'common':
+            {
+                'macros': ['MACRO3_1_2_1', 'MACRO3_1_2_2'],
+            },
             'properties': { 
                 'prop_1_1':'1_2'
             }
@@ -134,7 +144,7 @@ project_4_yaml = {
     },
     'common':
     {
-        'macros': ['MACRO2_1', 'MACRO2_2'],
+        'macros': ['MACRO4_1', 'MACRO4_2'],
     }
 }
 
@@ -151,7 +161,7 @@ projects_yaml = {
         }
     },
     'settings' : {
-        'export_dir': ['projects/{tool}_{target}/{project_name}']
+        'export_dir': ['projects/{tool}/{project_name}']
     }
 }
 
@@ -182,6 +192,8 @@ def init_files():
     create_files = [
         'test_workspace/project_1/src/header1.h',
         'test_workspace/project_1/src/main.cpp',
+        'test_workspace/project_1/src/uv1.h',
+        'test_workspace/project_1/src/uv1.cpp',
         'test_workspace/project_1/ldscripts/linker.ld',
         'test_workspace/project_1/staticlib/feThirdLib.a',
         'test_workspace/project_2/include/header2.h',
@@ -254,14 +266,14 @@ class TestProjectYAML(TestCase):
 
     def test_project_attributes(self):
         self.project._fill_export_dict('uvision')
-        assert set(self.project.project['export']['macros'] + [None]) & set(project_1_yaml['common']['macros'] + project_2_yaml['common']['macros']) 
-        assert set(self.project.project['export']['include_files'].keys()) & set(['default'] + list(project_2_yaml['common']['includes'].keys()))
+        assert set(self.project.export['macros']['common'] + [None]) == set(project_1_yaml['common']['macros'] + project_3_yaml['project_favors']['favor_1_2']['common']['macros']) 
+        assert set(self.project.export['include_files'].keys()) & set(['default'] + list(project_2_yaml['common']['includes'].keys()))
 
         # no c or asm files, empty dics
-        assert self.project.project['export']['source_files_c'] == dict()
-        assert self.project.project['export']['source_files_s'] == dict()
+        assert self.project.export['source_files_c'] == dict()
+        assert self.project.export['source_files_s'] == dict()
         # source groups should be equal
-        assert self.project.project['export']['source_files_cpp'].keys() == merge_recursive(project_1_yaml['common']['sources'], project_2_yaml['common']['sources']).keys()
+        assert self.project.export['source_files_cpp'].keys() == merge_recursive(project_1_yaml['common']['sources'], project_2_yaml['common']['sources']).keys()
 
     def test_copy(self):
         # test copy method which should copy all files to generated project dir by default
@@ -270,4 +282,4 @@ class TestProjectYAML(TestCase):
 
     def test_set_output_dir_path(self):
         self.project._fill_export_dict('uvision')
-        assert self.project.project['export']['output_dir']['path'] == os.path.join('projects', 'uvision_target1','project_1')
+        assert self.project.export['output_dir']['path'] == os.path.join('projects', 'uvision_target1','project_1')

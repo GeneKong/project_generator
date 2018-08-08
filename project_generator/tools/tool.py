@@ -58,6 +58,7 @@ def get_tool_template():
     internal_template = {
         'source_paths': [],
         'include_paths': [],
+        'linker_search_paths':[],
         'include_files': {},
         'source_files_c': {},
         'source_files_cpp': {},
@@ -70,9 +71,20 @@ def get_tool_template():
             'rel_path': '',
             'rel_count': '',
         },
-        "macros": [],
+        "macros": {
+            "common" : [],
+            "assemble" : [],
+            "ccompile" : [],
+            "cxxcompile" : []
+            },
+        "compile_flags": {
+            "common" : [],
+            "assemble" : [],
+            "ccompile" : [],
+            "cxxcompile" : []
+            },
         "template": None,
-        "misc": {}
+        "misc": {}        
     }
     return internal_template
 

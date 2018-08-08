@@ -21,105 +21,9 @@ import yaml
 
 from .tools_supported import ToolsSupported
 from .tools.tool import get_tool_template
-from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, OUTPUT_TYPES, SOURCE_KEYS, fix_paths
+from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, SOURCE_KEYS, fix_paths, merge_without_override
 
 logger = logging.getLogger('progen.project')
-
-class ProjectWorkspace:
-    """ Represents a workspace, application projects must be in a workspace
-        Yaml data available are:
-        settings:
-            export_dir: str
-            build_dir: str
-        toolchains:
-            gcc: str
-            armcc: str
-        projects: []
-    """
-    def __init__(self, name, projects, settings, toolchains):
-        self.name = name
-        self.projects = projects
-        self.settings = settings
-        self.toolchains = toolchains
-        self.generated_files = {}
-
-    def generate(self, tool, copied=False, copy=False):
-        """ Generates a workspace """
-
-        # copied - already done by external script, copy - do actual copy
-
-        tools = []
-        if not tool:
-            logger.info("Workspace supports one tool for all projects within.")
-            return -1
-        else:
-            tools = [tool]
-
-        result = 0
-        for export_tool in tools:
-            tool_export = ToolsSupported().get_tool(export_tool)
-            if tool_export is None:
-                result = -1
-                continue
-
-            project_export_dir_overwrite = False
-            if self.settings.export_location_format != self.settings.DEFAULT_EXPORT_LOCATION_FORMAT:
-                location_format = self.settings.export_location_format
-            else:
-                if 'export_dir' in self.workspace_settings:
-                    location_format = self.workspace_settings['export_dir'][0]
-                    project_export_dir_overwrite = True
-                else:
-                    location_format = self.settings.export_location_format
-
-            # substitute all of the different dynamic values
-            location = PartialFormatter().format(location_format, **{
-                'project_name': self.name,
-                'tool': tool,
-                'workspace_name': self.name
-            })
-
-            workspace_dic = {
-                'projects': [],
-                'settings': {
-                    'name': self.name,
-                    'path': os.path.normpath(location),
-                },
-            }
-
-            for project in self.projects:
-                generated_files = {
-                    'projects' : [],
-                    'workspaces': [],
-                }
-
-                if project_export_dir_overwrite:
-                    project.project['common']['export_dir'] = location
-                # Merge all dics, copy sources if required, correct output dir. This happens here
-                # because we need tool to set proper path (tool might be used as string template)
-                project._fill_export_dict(export_tool, copied)
-
-                if copy:
-                    project._copy_sources_to_generated_destination()
-                project.project['export']['singular'] = False
-                files = tool_export(project.project['export'], self.settings).export_project()
-                # we gather all generated files, needed for workspace files
-                workspace_dic['projects'].append(files)
-                generated_files['projects'].append(files)
-
-            # all projects are genereated, now generate workspace files
-            generated_files['workspaces'] = tool_export(workspace_dic, self.settings).export_workspace()
-
-            self.generated_files[export_tool] = generated_files
-            return result
-
-    def build(self, tool):
-        logger.info("Building a workspace is not currently supported")
-        return -1
-
-    def clean(self, tool):
-        logger.info("Cleaning a workspace is not currently supported")
-        return -1
 
 class ProjectTemplate:
     """ Public data which can be set in yaml files
@@ -213,6 +117,7 @@ class ProjectTemplate:
             'name': name,             # project name
             'type': output_type,      # output type, default - exe
             'templates': [],          # templates
+            'tool_specific':{},       # 
             'required': {},           # Tools which are supported,
         }
         project_template.update(ProjectTemplate._get_common_data_template())
@@ -271,29 +176,123 @@ class Project:
         except IOError:
             raise IOError("The module.yaml in project:%s doesn't exist." % self.name)
 
-        for key in self.src_dicts:
+        self._update_from_src_dict(self.src_dicts)
+        
+        if self.project['type'].lower() == 'src':
+            if self.parent:
+                self.parent.update_from_required(self)
+            else:
+                raise NameError ("'src' type project %s can't be root project." % (name))
+        
+        #Process required project
+        self.sub_projects = {}
+        for subproj in self.project['required']:            
+            gen.reset_properties()
+            merge_without_override(self.project['required'][subproj], project_dicts)
+            self.sub_projects[subproj] = Project(subproj, self.project['required'][subproj], settings, gen, self)
+            if self.project['type'].lower() == 'src'and self.sub_projects[subproj].project['type'].lower() != 'src':
+                raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
+            
+        self.generated_files = {}
+    
+    def _update_from_src_dict(self, src_dict, override_str = True):
+        for key in src_dict:
             if key in ['favor_dimensions', 'project_favors']:
                 continue
             elif key == 'files':
                 for ikey in self.project[key]:                
-                    if ikey in self.src_dicts[key]:
-                        self._process_files_item(ikey)
+                    if ikey in src_dict[key]:
+                        self._process_files_item(ikey, src_dict)
             elif key in self.project:
-                self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], self.src_dicts[key]))
+                if type(self.project[key]) is dict:
+                    self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], src_dict[key]))
+                elif  type(self.project[key]) is list:
+                    self.project[key] = Project._list_elim_none(merge_recursive(self.project[key], src_dict[key]))
+                elif override_str:
+                    self.project[key] = src_dict[key]
         
-        #Process required project
-        for subproj in self.project['required']:
+    def update_from_required(self, subproj):
+        """
+        update information from sub-src-project  
+        """
+        if self.project['type'].lower() == 'src':
+            self.parent.update_from_required(subproj)
+        
+        #Need update for PATH
+        src_project = copy.deepcopy(subproj.project)
+        for key in ["tool_specific", "templates", "files", "linker"]:
             pass
-        self.generated_files = {}
+        
+        if "search_paths" in src_project["linker"]:
+            src_project["linker"]["search_paths"] = []
+            for path in subproj.project["linker"]["search_paths"]:
+                if os.path.exists(path):
+                    src_project["linker"]["search_paths"].append(path)
+                else:
+                    src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))                
+        if "files" in src_project:
+            src_project["files"]["includes"] = {}
+            for key, value in subproj.project["files"]["includes"].items():
+                src_project["files"]["includes"][key] = []
+                for path in value:
+                    if os.path.exists(path):
+                        src_project["files"]["includes"][key].append(path)
+                    else:
+                        src_project["files"]["includes"][key].append(os.path.join("..", subproj.name, path))
+            for key, value in subproj.project["files"]["sources"].items():
+                src_project["files"]["sources"][key] = []
+                for path in value:
+                    if os.path.exists(path):
+                        src_project["files"]["sources"][key].append(path)
+                    else:
+                        src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))                
+        if "tool_specific" in src_project:
+            for key, value in subproj.project["tool_specific"].items():
+                if "includes" in value:
+                    if type(value["includes"]) is list:
+                        src_project["tool_specific"][key]["includes"] = []
+                        for path in value["includes"]:
+                            if os.path.exists(path):
+                                src_project["tool_specific"][key]["includes"].append(path)
+                            else:
+                                src_project["tool_specific"][key]["includes"].append(os.path.join("..", subproj.name, path))
+                    elif type(value["includes"]) is dict:
+                        src_project["tool_specific"][key]["includes"] = {}
+                        for k,v in value["includes"].items():
+                            src_project["tool_specific"][key]["includes"][k] = []
+                            for path in v:
+                                if os.path.exists(path):
+                                    src_project["tool_specific"][key]["includes"][k].append(path)
+                                else:
+                                    src_project["tool_specific"][key]["includes"][k].append(os.path.join("..", subproj.name, path))
+                elif "sources" in value:
+                    if type(value["sources"]) is list:
+                        src_project["tool_specific"][key]["sources"] = []
+                        for path in value["sources"]:
+                            if os.path.exists(path):
+                                src_project["tool_specific"][key]["sources"].append(path)
+                            else:
+                                src_project["tool_specific"][key]["sources"].append(os.path.join("..", subproj.name, path))
+                    elif type(value["sources"]) is dict:
+                        src_project["tool_specific"][key]["sources"] = {}
+                        for k,v in value["sources"].items():
+                            src_project["tool_specific"][key]["sources"][k] = []
+                            for path in v:
+                                if os.path.exists(path):
+                                    src_project["tool_specific"][key]["sources"][k].append(path)
+                                else:
+                                    src_project["tool_specific"][key]["sources"][k].append(os.path.join("..", subproj.name, path))
+        
+        self._update_from_src_dict(src_project, False)
     
-    def _process_files_item(self, key):
-        if type(self.src_dicts['files'][key]) is list:
-            self.project['files'][key].setdefault('default',[]).extend(self.src_dicts['files'][key])
+    def _process_files_item(self, key, src_dicts):
+        if type(src_dicts['files'][key]) is list:
+            self.project['files'][key].setdefault('default',[]).extend(src_dicts['files'][key])
         else:
             self.project['files'][key] = Project._dict_elim_none(
                 merge_recursive(
                     self.project['files'][key],
-                    self.src_dicts['files'][key]))
+                    src_dicts['files'][key]))
                     
     @staticmethod
     def _list_elim_none(list_to_clean):
@@ -310,36 +309,12 @@ class Project:
                     dic[k] = Project._dict_elim_none(v)
         except AttributeError:
             pass
-        return dic
+        return dic                                
 
-    # Project data have the some keys the same, therefore we process them here
-    # and their own keys, are processed in common/tool attributes
-    def _set_project_attributes(self, key_value, destination, source):
-        if key_value in source:
-            for attribute, data in source[key_value].items():
-                if attribute in ProjectTemplate.get_project_template().keys():
-                    if type(destination[attribute]) is list:
-                        if type(data) is list:
-                            destination[attribute].extend(Project._list_elim_none(data))
-                        else:
-                            destination[attribute].append(Project._dict_elim_none(data))
-                    elif type(destination[attribute]) is dict:
-                        destination[attribute] = Project._dict_elim_none(merge_recursive(destination[attribute], data))
-                    else:
-                        if type(data) is list:
-                            if data[0]:
-                                destination[attribute] = data[0]
-                        else:
-                            if data:
-                                destination[attribute] = data
-                                
-
-    def _set_internal_common_data(self):
+    def _set_internal_files_data(self):
         # process here includes, sources and set all internal data related to them
-        for files in self.project['files']['sources']:
-            self._process_source_files(files)
-        for files in self.project['files']['includes']:
-            self._process_include_files(files)
+        self._process_source_files(self.project['files']['sources'])
+        self._process_include_files(self.project['files']['includes'])
 
     def _set_internal_tool_data(self, tool_keywords):
         # process here includes, sources and set all internal data related to them for tool_keywords
@@ -352,6 +327,19 @@ class Project:
                     for files in self.project['tool_specific'][tool]['sources']:
                         self._process_source_files(files)
 
+    def _set_internal_macros_and_flags(self):
+        self.export['macros']['common'] = merge_recursive([], self.project['common']['macros'])
+        self.export['macros']['assemble'] = merge_recursive([], self.project['assemble']['macros'])
+        self.export['macros']['ccompile'] = merge_recursive([], self.project['ccompile']['macros'])
+        self.export['macros']['cxxcompile'] = merge_recursive([], self.project['cxxcompile']['macros'])
+        self.export['macros'] = Project._dict_elim_none(self.export['macros'])
+        
+        self.export['compile_flags']['common'] = merge_recursive([], self.project['common']['flags'])
+        self.export['compile_flags']['assemble'] = merge_recursive([], self.project['assemble']['flags'])
+        self.export['compile_flags']['ccompile'] = merge_recursive([], self.project['ccompile']['flags'])
+        self.export['compile_flags']['cxxcompile'] = merge_recursive([], self.project['cxxcompile']['flags'])
+        self.export['compile_flags'] = Project._dict_elim_none(self.export['compile_flags'])
+                
     def _process_include_files(self, files, use_group_name = 'default'):
         # If it's dic add it , if file, add it to files
         use_includes = []
@@ -364,8 +352,8 @@ class Project:
             if files:
                 use_includes = [files]
 
-        if use_group_name not in self.project['export']['include_files'] and use_includes:
-            self.project['export']['include_files'][use_group_name] = []
+        if use_group_name not in self.export['include_files'] and use_includes:
+            self.export['include_files'][use_group_name] = []
 
         for include_file in use_includes:
             include_file = include_file.replace('\\', '/')
@@ -384,13 +372,13 @@ class Project:
                         # TODO: catch only those exceptions which are relevant
                         logger.debug("The includes is not accessible: %s" % include_file)
                         continue
-                    self.project['export']['include_files'][use_group_name] += include_files
+                    self.export['include_files'][use_group_name] += include_files
                 else:
                     # include files are in groups as sources
-                    self.project['export']['include_files'][use_group_name].append(os.path.normpath(include_file))
+                    self.export['include_files'][use_group_name].append(os.path.normpath(include_file))
                     dir_path = os.path.dirname(include_file)
-                if not os.path.normpath(dir_path) in self.project['export']['include_paths']:
-                    self.project['export']['include_paths'].append(os.path.normpath(dir_path))
+                if not os.path.normpath(dir_path) in self.export['include_paths']:
+                    self.export['include_paths'].append(os.path.normpath(dir_path))
 
     def _process_source_files(self, files, use_group_name='default'):
         use_sources = []
@@ -408,7 +396,7 @@ class Project:
             source_file = source_file.replace('\\', '/')
             source_file = os.path.normpath(source_file)
             if os.path.isdir(source_file):
-                self.project['export']['source_paths'].append(source_file)
+                self.export['source_paths'].append(source_file)
                 self._process_source_files([os.path.join(source_file, f) for f in os.listdir(
                     source_file) if os.path.isfile(os.path.join(source_file, f))], use_group_name)
 
@@ -417,26 +405,13 @@ class Project:
             if extension not in VALID_EXTENSIONS:
                 continue
             source_group = FILE_MAP[extension]
-            if use_group_name not in self.project['export'][source_group]:
-                self.project['export'][source_group][use_group_name] = []
+            if use_group_name not in self.export[source_group]:
+                self.export[source_group][use_group_name] = []
 
-            self.project['export'][source_group][use_group_name].append(source_file)
+            self.export[source_group][use_group_name].append(source_file)
 
-            if not os.path.dirname(source_file) in self.project['export']['source_paths']:
-                self.project['export']['source_paths'].append(os.path.normpath(os.path.dirname(source_file)))
-
-    def _validate_tools(self, tool):
-        """ Use tool_supported or tool """
-
-        tools = []
-        if not tool:
-            if len(self.project['common']['tools_supported']) == 0:
-                logger.info("No tool defined.")
-                return -1
-            tools = self.project['common']['tools_supported']
-        else:
-            tools = [tool]
-        return tools
+            if not os.path.dirname(source_file) in self.export['source_paths']:
+                self.export['source_paths'].append(os.path.normpath(os.path.dirname(source_file)))
 
     @staticmethod
     def _generate_output_dir(settings, path):
@@ -484,8 +459,8 @@ class Project:
         if self.settings.export_location_format != self.settings.DEFAULT_EXPORT_LOCATION_FORMAT:
             location_format = self.settings.export_location_format
         else:
-            if 'export_dir' in self.project['export'] and self.project['export']['export_dir']:
-                location_format = self.project['export']['export_dir']
+            if 'export_dir' in self.export and self.export['export_dir']:
+                location_format = self.export['export_dir']
             else:
                 location_format = self.settings.export_location_format
 
@@ -495,14 +470,14 @@ class Project:
             'tool': tool,
         })
 
-        self.project['export']['output_dir']['path'] = os.path.normpath(location)
-        path = self.project['export']['output_dir']['path']
+        self.export['output_dir']['path'] = os.path.normpath(location)
+        path = self.export['output_dir']['path']
         if copied:
             # Sources were copied, therefore they should be in the exported folder
-            self.project['export']['output_dir']['rel_path'] = ''
-            self.project['export']['output_dir']['rel_count'] = 0
+            self.export['output_dir']['rel_path'] = ''
+            self.export['output_dir']['rel_count'] = 0
         else:
-            self.project['export']['output_dir']['rel_path'], self.project['export']['output_dir']['rel_count'] = self._generate_output_dir(self.settings, path)
+            self.export['output_dir']['rel_path'], self.export['output_dir']['rel_count'] = self._generate_output_dir(self.settings, path)
 
     def _fill_export_dict(self, tool, copied=False):
         tool_keywords = []
@@ -512,72 +487,63 @@ class Project:
         tool_keywords = list(set(tool_keywords))
 
         # Set the template keys an get the relative path to fix all paths
-        self.project['export'] = get_tool_template()
-        self.project['export'].update(self.project['common'])
+        self.export = get_tool_template()
 
         self._set_output_dir_path(tool, copied)
 
-        self._set_internal_common_data()
+        self._set_internal_files_data()
         self._set_internal_tool_data(tool_keywords)
+        self._set_internal_macros_and_flags()
 
         # Merge common project data with tool specific data
-        self.project['export']['source_paths'] += self._get_tool_data('source_paths', tool_keywords)
-        self.project['export']['include_paths'] += self._get_tool_data('include_paths', tool_keywords)
-        self.project['export']['includes'] += self._get_tool_data('includes', tool_keywords)
-        self.project['export']['linker_file'] =  self.project['export']['linker_file'] or self._get_tool_data('linker_file', tool_keywords)
-        self.project['export']['macros'] += self._get_tool_data('macros', tool_keywords)
-        self.project['export']['template'] = self._get_tool_data('template', tool_keywords)
-
-        fix_paths(self.project['export'], self.project['export']['output_dir']['rel_path'], list(FILES_EXTENSIONS.keys()) + ['include_paths', 'source_paths'])
+        self.export['template'] = self._get_tool_data('template', tool_keywords)
+        self.export['linker_search_paths'] = self.project['linker']['search_paths']
+        self.export['linker'] = self.project['linker']
+        self.export['output_type'] = self.project['type']
+        
+        fix_paths(self.export, self.export['output_dir']['rel_path'],
+                   list(FILES_EXTENSIONS.keys()) + ['include_paths', 'source_paths', 'linker_search_paths'])
 
         # misc for tools requires dic merge
         misc = self._get_tool_data('misc', tool_keywords)
         for m in misc:
-            self.project['export']['misc'] = merge_recursive(self.project['export']['misc'], m)
+            self.export['misc'] = merge_recursive(self.export['misc'], m)
 
         # This is magic with sources/include_files as they have groups
         tool_sources = self._get_tool_sources(tool_keywords)
         for key in SOURCE_KEYS:
-            self.project['export'][key] = merge_recursive(self.project['export'][key], tool_sources[key])
+            self.export[key] = merge_recursive(self.export[key], tool_sources[key])
             # sort all sources within its own group and own category (=k)
             # the tool needs to do sort files as tools require further processing based on 
             # categories (we can't mix now cpp and c files for instance)
-            for k, v in self.project['export'][key].items():
-                self.project['export'][key][k] = sorted(v, key=lambda x: os.path.basename(x))
+            for k, v in self.export[key].items():
+                self.export[key][k] = sorted(v, key=lambda x: os.path.basename(x))
 
-        self.project['export']['include_files'] = merge_recursive(self.project['export']['include_files'], self._get_tool_includes(tool_keywords))
+        self.export['include_files'] = merge_recursive(self.export['include_files'], self._get_tool_includes(tool_keywords))
 
         # linker checkup
-        if len(self.project['export']['linker_file']) == 0 and self.project['export']['output_type'] == 'exe':
+        if self.export['output_type'] != 'src' and len(self.export['linker']['script_files']) == 0 :
             logger.debug("Executable - no linker command found.")
-
-        # There might be a situation when there are more linkers. warn user and choose the first one
-        if type(self.project['export']['linker_file']) == type(list()):
-            if len(self.project['export']['linker_file']) > 1:
-                logger.debug("More than one linker command files: %s" % self.project['export']['linker_file'])
-            elif len(self.project['export']['linker_file']) == 0:
-                logger.debug("No linker found for %s tool" % tool)
-                return
-            self.project['export']['linker_file'] = self.project['export']['linker_file'][0]
 
     def _copy_sources_to_generated_destination(self):
         """ Copies all project files to specified directory - generated dir """
 
         files = []
         for key in FILES_EXTENSIONS.keys():
-            if type(self.project['export'][key]) is dict:
-                for k,v in self.project['export'][key].items():
-                    files.extend(v)
-            elif type(self.project['export'][key]) is list:
-                files.extend(self.project['export'][key])
-            else:
-                files.append(self.project['export'][key])
+            if key in self.export:
+                if type(self.export[key]) is dict:
+                    for k,v in self.export[key].items():
+                        files.extend(v)
+                elif type(self.export[key]) is list:
+                    files.extend(self.export[key])
+                else:
+                    files.append(self.export[key])
 
-        destination = os.path.join(self.settings.root, self.project['export']['output_dir']['path'])
+        destination = os.path.join(self.settings.root, self.export['output_dir']['path'])
         if os.path.exists(destination):
             shutil.rmtree(destination)
         for item in files:
-            s = os.path.join(self.settings.root, item)
+            s = os.path.join(self.settings.root, self.basepath, item)
             d = os.path.join(destination, item)
             if os.path.isdir(s):
                 shutil.copytree(s,d)
@@ -596,7 +562,7 @@ class Project:
         for current_tool in tools:
             # We get the export dict formed, then use it for cleaning
             self._fill_export_dict(current_tool)
-            path = self.project['export']['output_dir']['path']
+            path = self.export['output_dir']['path']
 
             if os.path.isdir(path):
                 logger.info("Cleaning directory %s" % path)
@@ -631,13 +597,13 @@ class Project:
                 dump_data = {}
                 dump_data['common'] = self.project['common']
                 dump_data['tool_specific'] = self.project['tool_specific']
-                dump_data['merged'] = self.project['export']
+                dump_data['merged'] = self.export
                 handler = logging.FileHandler(os.path.join(os.getcwd(), "%s.log" % self.name),"w", encoding=None, delay="true")
                 handler.setLevel(logging.DEBUG)
                 logger.addHandler(handler)
                 logger.debug("\n" + yaml.dump(dump_data))
 
-            files = exporter(self.project['export'], self.settings).export_project()
+            files = exporter(self.export, self.settings).export_project()
             generated_files[export_tool] = files
         self.generated_files = generated_files
         return result

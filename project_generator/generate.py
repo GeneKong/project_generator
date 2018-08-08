@@ -69,8 +69,8 @@ class Generator:
                 found = True
                 for name, records in sorted(self.projects_dict['projects'].items(),
                                             key=lambda x: x[0]):
-                    yield Project(name, records, self.settings, self)
                     self.reset_properties()
+                    yield Project(name, records, self.settings, self)                    
 
         if not found:
             logging.error("You specified an invalid project name.")
