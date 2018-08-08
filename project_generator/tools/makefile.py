@@ -20,7 +20,6 @@ import subprocess
 from itertools import chain
 
 from os.path import join, normpath,dirname
-from project_generator_definitions.definitions import ProGenDef
 
 from .tool import Tool, Exporter
 from ..util import SOURCE_KEYS
@@ -94,23 +93,6 @@ class MakefileTool(Tool, Exporter):
             project_data[key] = list(chain(*project_data[key].values()))
         self._get_libs(project_data)
         self._parse_specific_options(project_data)
-
-
-        pro_def = ProGenDef()
-
-        if pro_def.get_mcu_core(project_data['target'].lower()):
-            project_data['core'] = pro_def.get_mcu_core(project_data['target'].lower())[0]
-        else:
-            raise RuntimeError(
-                "Target: %s not found, Please add the target to https://github.com/project-generator/project_generator_definitions" % project_data['target'].lower())
-
-        # gcc arm is funny about cortex-m4f.
-        if project_data['core'] == 'cortex-m4f':
-            project_data['core'] = 'cortex-m4'
-
-        # change cortex-m0+ to cortex-m0plus
-        if project_data['core'] == 'cortex-m0+':
-            project_data['core'] = 'cortex-m0plus'
 
     def build_project(self):
         # cwd: relpath(join(project_path, ("gcc_arm" + project)))

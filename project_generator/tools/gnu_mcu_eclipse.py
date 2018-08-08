@@ -302,7 +302,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         self.exporter.process_data_for_makefile(data_for_gnu_mcu)   
 
         # process path format in windows
-        for name in ['linker_file','toolchain_bin_path',
+        for name in ['toolchain_bin_path',
                      'lib_paths', 'include_paths', 'source_paths',
                      'source_files_c', 'source_files_cpp', 'source_files_s']:
             if type(data_for_gnu_mcu[name]) == list:
@@ -312,7 +312,11 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
                 data_for_gnu_mcu[name] = new_paths
             elif data_for_gnu_mcu[name]:
                 data_for_gnu_mcu[name] = data_for_gnu_mcu[name].replace('\\', '/')
-
+        new_paths = []
+        for path in data_for_gnu_mcu['linker']['search_paths']:
+            new_paths.append(path.replace('\\', '/'))
+        data_for_gnu_mcu['linker']['search_paths'] = new_paths
+        
         expanded_dic = self.workspace.copy()
         expanded_dic['rel_path'] = data_for_gnu_mcu['output_dir']['rel_path']
         groups = self._get_groups(expanded_dic)

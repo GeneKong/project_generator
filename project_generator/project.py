@@ -130,7 +130,7 @@ class Project:
     def __init__(self, name, project_dicts, settings, gen, parent = None):
         """ Initialise a project with a yaml file """
 
-        assert type(project_dicts) is dict, "Project records/dics must be a dict" % project_dicts 
+        assert type(project_dicts) is dict, "Project %s records/dics must be a dict" % (name, project_dicts) 
 
         self.settings = settings
         self.name = name
@@ -376,7 +376,7 @@ class Project:
                 if not os.path.normpath(dir_path) in self.export['include_paths']:
                     self.export['include_paths'].append(os.path.normpath(dir_path))
 
-    def _process_source_files(self, files, use_group_name='default'):
+    def _process_source_files(self, files, use_group_name='default', add_basepath = True):
         use_sources = []
         if type(files) == dict:
             for group_name, sources in files.items():
@@ -389,12 +389,14 @@ class Project:
                 use_sources = [files]
 
         for source_file in use_sources:
-            source_file = source_file.replace('\\', '/')
-            source_file = os.path.normpath(source_file)
+            if not add_basepath:
+                source_file = os.path.normpath(source_file)
+            else:
+                source_file = os.path.normpath(os.path.join(self.basepath, source_file))
             if os.path.isdir(source_file):
                 self.export['source_paths'].append(source_file)
                 self._process_source_files([os.path.join(source_file, f) for f in os.listdir(
-                    source_file) if os.path.isfile(os.path.join(source_file, f))], use_group_name)
+                    source_file) if os.path.isfile(os.path.join(source_file, f))], use_group_name, False)
 
             # Based on the extension, create a groups inside source_files_(extension)
             extension = source_file.split('.')[-1].lower()
@@ -551,81 +553,63 @@ class Project:
     def clean(self, tool):
         """ Clean a project """
 
-        tools = self._validate_tools(tool)
-        if tools == -1:
-            return -1
+        # We get the export dict formed, then use it for cleaning
+        self._fill_export_dict(tool)
+        path = self.export['output_dir']['path']
 
-        for current_tool in tools:
-            # We get the export dict formed, then use it for cleaning
-            self._fill_export_dict(current_tool)
-            path = self.export['output_dir']['path']
+        if os.path.isdir(path):
+            logger.info("Cleaning directory %s" % path)
 
-            if os.path.isdir(path):
-                logger.info("Cleaning directory %s" % path)
-
-                shutil.rmtree(path)
+            shutil.rmtree(path)
         return 0
 
     def generate(self, tool, copied=False, copy=False):
         """ Generates a project """
 
-        tools = self._validate_tools(tool)
-        if tools == -1:
-            return -1
-
         generated_files = {}
         result = 0
-        for export_tool in tools:
-            exporter = ToolsSupported().get_tool(export_tool)
+        exporter = ToolsSupported().get_tool(tool)
 
-            # None is an error
-            if exporter is None:
-                result = -1
-                logger.debug("Tool: %s was not found" % export_tool)
-                continue
+        # None is an error
+        if exporter is None:
+            result = -1
+            logger.debug("Tool: %s was not found" % tool)
 
-            self._fill_export_dict(export_tool, copied)
-            if copy:
-                logger.debug("Copying sources to the output directory")
-                self._copy_sources_to_generated_destination()
-            # dump a log file if debug is enabled
-            if logger.isEnabledFor(logging.DEBUG):
-                dump_data = {}
-                dump_data['common'] = self.project['common']
-                dump_data['tool_specific'] = self.project['tool_specific']
-                dump_data['merged'] = self.export
-                handler = logging.FileHandler(os.path.join(os.getcwd(), "%s.log" % self.name),"w", encoding=None, delay="true")
-                handler.setLevel(logging.DEBUG)
-                logger.addHandler(handler)
-                logger.debug("\n" + yaml.dump(dump_data))
+        self._fill_export_dict(tool, copied)
+        if copy:
+            logger.debug("Copying sources to the output directory")
+            self._copy_sources_to_generated_destination()
+        # dump a log file if debug is enabled
+        if logger.isEnabledFor(logging.DEBUG):
+            dump_data = {}
+            dump_data['files'] = self.project['files']
+            dump_data['tool_specific'] = self.project['tool_specific']
+            dump_data['merged'] = self.export
+            handler = logging.FileHandler(os.path.join(os.getcwd(), "%s.log" % self.name),"w", encoding=None, delay="true")
+            handler.setLevel(logging.DEBUG)
+            logger.addHandler(handler)
+            logger.debug("\n" + yaml.dump(dump_data))
 
-            files = exporter(self.export, self.settings).export_project()
-            generated_files[export_tool] = files
+        files = exporter(self.export, self.settings).export_project()
+        generated_files[tool] = files
         self.generated_files = generated_files
         return result
 
     def build(self, tool):
         """build the project"""
 
-        tools = self._validate_tools(tool)
-        if tools == -1:
-            return -1
-
         result = 0
+        builder = ToolsSupported().get_tool(tool)
+        # None is an error
+        if builder is None:
+            logger.debug("Tool: %s was not found" % builder)
+            result = -1
 
-        for build_tool in tools:
-            builder = ToolsSupported().get_tool(build_tool)
-            # None is an error
-            if builder is None:
-                logger.debug("Tool: %s was not found" % builder)
-                result = -1
-                continue
-
-            logger.debug("Building for tool: %s", build_tool)
-            logger.debug(self.generated_files)
-            if builder(self.generated_files[build_tool], self.settings).build_project() == -1:
-                # if one fails, set to -1 to report
-                result = -1
+        logger.debug("Building for tool: %s", tool)
+        logger.debug(self.generated_files)
+        if builder(self.generated_files[tool], self.settings).build_project() == -1:
+            # if one fails, set to -1 to report
+            result = -1
         return result
 
     def get_generated_project_files(self, tool):

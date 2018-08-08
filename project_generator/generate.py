@@ -20,6 +20,8 @@ from .project import Project
 class Generator:
     def __init__(self, source):
         self.basepath = os.path.dirname(source)
+        if len(self.basepath) == 0:
+            self.basepath = "."
         self.properties = {}
         try:
             with open(source, 'rt') as f:
@@ -52,6 +54,8 @@ class Generator:
                 for name, records in sorted(self.projects_dict['projects'].items(),
                                             key=lambda x: x[0]):
                     self.reset_properties()
+                    if not records:
+                        records = {}
                     yield Project(name, records, self.settings, self)                    
 
         if not found:
