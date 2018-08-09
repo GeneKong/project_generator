@@ -189,9 +189,11 @@ class Project:
         self._update_from_src_dict(Project._dict_elim_none(self.src_dicts))
         self.project['type'] = self.project['type'].lower()
         
+        
         # always copy portable file to destionation
         self._copy_portable_to_destination()
-        
+        self.outdir_path = self._get_output_dir_path(self.tool)
+                
         if self.project['type'] != 'exe':
             if self.parent:
                 self.parent.update_from_required(self, self.project['type'])
@@ -260,8 +262,8 @@ class Project:
                         src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))
                         
         if ptype == "lib":
-            self.project["linker"]["libraries"].append(subproj.name)
-            self.project["linker_search_paths"].append(os.path.join("..", os.path.basename(self._get_output_dir_path(self.tool)), "Debug"))
+            self.project["linker"]["libraries"].append(os.path.basename(subproj.outdir_path))
+            self.project["linker_search_paths"].append(os.path.join("..", os.path.basename(subproj.outdir_path), "Debug"))
             
         #Merge file path
         if "files" in src_project:
