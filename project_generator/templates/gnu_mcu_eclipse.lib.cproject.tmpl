@@ -25,9 +25,10 @@
 						<toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.lib.debug.457363173" name="ARM Cross GCC" superClass="ilg.gnuarmeclipse.managedbuild.cross.toolchain.lib.debug">
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.68977316" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.{{options.optimization}}" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.368706066" name="Message length (-fmessage-length=0)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength" useByScannerDiscovery="true" value="{{options.value['-fmessage-length=0']}}" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.1892648933" name="'char' is signed (-fsigned-char)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar" useByScannerDiscovery="true" value="{{options.value['-fmessage-length=0']}}" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.1892648933" name="'char' is signed (-fsigned-char)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar" useByScannerDiscovery="true" value="{{options.value['-fsigned-char']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1416764396" name="Function sections (-ffunction-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections" useByScannerDiscovery="true" value="{{options.value['-ffunction-sections']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections.1740288909" name="Data sections (-fdata-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.datasections" useByScannerDiscovery="true" value="{{options.value['-fdata-sections']}}" valueType="boolean"/>
+							
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.69226705" name="Debug level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.level.{{options.debug}}" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1353367273" name="Debug format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format" useByScannerDiscovery="true"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name.1234298524" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name" useByScannerDiscovery="false" value="GNU Tools for ARM Embedded Processors" valueType="string"/>
@@ -54,6 +55,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.logicalop.1146044639" name="Warn if suspicious logical ops (-Wlogical-op)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.logicalop" useByScannerDiscovery="true" value="{{options.value['-Wlogical-op']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn.871903717" name="Warn if struct is returned (-Wagreggate-return)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn" useByScannerDiscovery="true" value="{{options.value['-Waggregate-return']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal.1578062366" name="Warn if floats are compared as equal (-Wfloat-equal)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal" useByScannerDiscovery="true" value="{{options.value['-Wfloat-equal']}}" valueType="boolean"/>
+							
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other.504961091" name="Other debugging flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other" useByScannerDiscovery="true" value="-fstack-usage" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.620178780" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/{{name}}}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1343005018" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
@@ -63,7 +65,7 @@
 									{%- for macro in macros.common %} 
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{%- endfor %}
-									{%- for macro in macros.assemble %} 
+									{%- for macro in macros.asm %} 
 									<listOptionValue builtIn="false" value="&{{macro}}"/>
 									{%- endfor %}
 								</option>
@@ -80,7 +82,7 @@
 									{% for macro in macros.common %} 
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
-									{% for macro in macros.ccompile %} 
+									{% for macro in macros.c %} 
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 								</option>
@@ -97,7 +99,7 @@
 									{% for macro in macros.common %} 
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
-									{% for macro in macros.cxxcompile %} 
+									{% for macro in macros.cxx %} 
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 								</option>
@@ -136,8 +138,9 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="RTOS" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="RTOS"/>
+					    {% for path in source_paths %} 
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="{{path}}"/> 
+                        {% endfor %}						
 					</sourceEntries>
 				</configuration>
 			</storageModule>

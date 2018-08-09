@@ -251,23 +251,55 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         self.env_settings = env_settings
             # all bool gnu mcu eclipse options store here
         self.GNU_MCU_BOOL_COMMAND2OPTIONS = {
+        "-Wall":"false",
+        "-Wextra":"false",
+        "-fsyntax-only":"false",
+        "-pedantic":"false",
+        "-pedantic-errors":"false",
+        "-w":"false",
+        "-Wunused":"false",
+        "-Wuninitialised":"false",
+        "-Wmissing-declaration":"false",
+        "-Wconversion":"false",
+        "-Wpointer-arith":"false",
+        "-Wshadow":"false",
+        "-Wpadded":"false",
+        "-Werror":"false",
+        
+        "-p":"false",
+        "-pg":"false",
+        
         #C
         "-fmessage-length=0":"false",
         "-fsigned-char":"false",
         "-ffunction-sections":"false",
         "-fdata-sections":"false",
         "-fno-common":"false",
-        "-Wall":"false",
-        "-Wextra":"false",
+        "-ffreestanding":"false",
+        "-fno-move-loop-invariants":"false",
         "-Wlogical-op":"false",
         "-Waggregate-return":"false",
         "-Wfloat-equal":"false",
+        '-fno-inline-functions':"false",
+        '-fno-builtin':"false",
+        '-fsingle-precision-constant':"false",
+        '-fPIC':"false",
+        '-flto':"false",
+        
         #CXX
+        "-nostdinc": "fasle",
+        "-nostdinc++": "fasle",
         "-Wabi":"false",
         "-fno-exceptions":"false",
         "-fno-rtti":"false",
         "-fno-use-cxa-atexit":"false",
-        "-fno-threadsafe-statics":"false"
+        "-fno-threadsafe-statics":"false",
+        "-Wctor-dtor-privacy":"fasle",
+        "-Wnoexcept":"false",
+        "-Wnon-virtual-dtor":"false",
+        "-Wstrict-null-sentinel":"false",
+        "-Wsign-promo":"false",
+        "-Weffc++":"false"
         }
     
         self.GNU_MCU_STR_COMMAND2OPTIONS = {
@@ -318,7 +350,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         expanded_dic = self.workspace.copy()
         
         # process path format in windows
-        for name in ['include_paths', 'source_paths','include_paths',
+        for name in ['include_paths', 'source_paths','include_paths', 'linker_search_paths',
                      'source_files_c', 'source_files_cpp', 'source_files_s']:            
             expanded_dic[name] = self._fixed_path_2_unix_style(expanded_dic[name])
             
@@ -363,7 +395,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
                     self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
                 elif flag.replace(" ","") in self.GNU_MCU_STR_COMMAND2OPTIONS:
                     self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag.replace(" ","")] = flag
-                elif name == "common_flags" :
+                elif name == "common" :
                     c_flags.append(flag)
                     cxx_flags.append(flag)
                     asm_flags.append(flag)
@@ -383,23 +415,32 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         expanded_dic["options"]["other_cxx_flags"] = " ".join(cxx_flags)
         expanded_dic["options"]["other_asm_flags"] = " ".join(asm_flags)
         
-        #
-        fix_gnu_mcu_include_paths = []
-        for path in expanded_dic["include_paths"]:
-            if not exists(path):
-                fix_gnu_mcu_include_paths.append("../" + path)
-            else:
-                fix_gnu_mcu_include_paths.append(path)
-        expanded_dic["include_paths"] = fix_gnu_mcu_include_paths
+        # just fixed for gnu mcu eclipse project
+        expanded_dic["include_paths"] = self._fix_gnu_mcu_path(expanded_dic["include_paths"])
+        expanded_dic["linker_search_paths"] = self._fix_gnu_mcu_path(expanded_dic["linker_search_paths"])
         
-        # Project file
-        project_path, output['files']['cproj'] = self.gen_file_jinja(
-            'gnu_mcu_eclipse.cproject.tmpl', expanded_dic, '.cproject', expanded_dic['output_dir']['path'])
+        if expanded_dic["type"] == "exe":            
+            project_path, output['files']['cproj'] = self.gen_file_jinja(
+                'gnu_mcu_eclipse.elf.cproject.tmpl', expanded_dic, '.cproject', expanded_dic['output_dir']['path'])
+        else:        
+            project_path, output['files']['cproj'] = self.gen_file_jinja(
+                'gnu_mcu_eclipse.lib.cproject.tmpl', expanded_dic, '.cproject', expanded_dic['output_dir']['path'])
+        
+
 
         project_path, output['files']['proj_file'] = self.gen_file_jinja(
             'eclipse.project.tmpl', expanded_dic, '.project', expanded_dic['output_dir']['path'])
         return output
-
+    
+    def _fix_gnu_mcu_path(self, paths):
+        npaths = []
+        for path in paths:
+            if not exists(path):
+                npaths.append("../" + path)
+            else:
+                npaths.append(path)
+        return npaths
+    
     def get_generated_project_files(self):
         return {'path': self.workspace['path'], 'files': [self.workspace['files']['proj_file'], self.workspace['files']['cproj'],
             self.workspace['files']['makefile']]}

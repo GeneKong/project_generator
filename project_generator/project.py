@@ -118,6 +118,7 @@ class ProjectTemplate:
             'type': output_type,      # output type, default - exe
             'templates': [],          # templates
             'tool_specific':{},       # 
+            'linker_search_paths': [],
             'required': {},           # Tools which are supported,
             'portable':{
                 'dest': port_dest,
@@ -185,7 +186,7 @@ class Project:
 
         self._update_from_src_dict(self.src_dicts)
         
-        if self.project['type'].lower() == 'src':
+        if self.project['type'].lower() != 'exe':
             if self.parent:
                 self.parent.update_from_required(self)
             else:
@@ -235,16 +236,26 @@ class Project:
         
         #Need update for PATH
         src_project = copy.deepcopy(subproj.project)
-        for key in ["tool_specific", "templates", "files", "linker"]:
-            pass
-        #Merge search path
-        if "search_paths" in src_project["linker"]:
-            src_project["linker"]["search_paths"] = []
-            for path in subproj.project["linker"]["search_paths"]:
-                if os.path.exists(path):
-                    src_project["linker"]["search_paths"].append(path)
-                else:
-                    src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))
+        
+        src_project.pop('required')
+        src_project.pop('type')
+        if self.project['type'].lower() == 'lib':
+            src_project.pop('portable')
+            src_project['files'].pop("sources")
+            
+        if subproj.project['type'].lower() != "exe":
+            #Merge search path
+            if "search_paths" in src_project["linker"]:
+                for path in subproj.project["linker"]["search_paths"]:
+                    if os.path.exists(path):
+                        src_project["linker"]["search_paths"].append(path)
+                    else:
+                        src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))
+                        
+        if subproj.project['type'].lower() == "lib":
+            self.project["linker"]["libraries"].append(subproj.name)
+            self.project["linker_search_paths"].append(os.path.join("..", subproj.name, "Debug"))
+            
         #Merge file path
         if "files" in src_project:
             src_project["files"]["includes"] = {}
@@ -255,6 +266,7 @@ class Project:
                         src_project["files"]["includes"][key].append(path)
                     else:
                         src_project["files"]["includes"][key].append(os.path.join("..", subproj.name, path))
+
             for key, value in subproj.project["files"]["sources"].items():
                 src_project["files"]["sources"][key] = []
                 for path in value:
@@ -262,9 +274,11 @@ class Project:
                         src_project["files"]["sources"][key].append(path)
                     else:
                         src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))
+                        
         #Merge tool_specific path                
         if "tool_specific" in src_project:
             for key, value in subproj.project["tool_specific"].items():
+                src_project["tool_specific"][key].pop('sources')
                 if "includes" in value:
                     if type(value["includes"]) is list:
                         src_project["tool_specific"][key]["includes"] = []
@@ -628,6 +642,9 @@ class Project:
         if copy:
             logger.debug("Copying sources to the output directory")
             self._copy_sources_to_generated_destination()
+        
+        self.export['type'] = self.project['type']
+        self.export['linker_search_paths'].extend(self.project['linker_search_paths'])
         
         # dump a log file if debug is enabled
         if logger.isEnabledFor(logging.DEBUG):
