@@ -202,7 +202,18 @@ class Exporter(object):
             if k not in groups:
                 groups.append(k)
         return groups
-
+    
+    def _get_src_groups(self, data):
+        """ Get all groups defined """
+        groups = []
+        for attribute in SOURCE_KEYS:
+            for k, v in data[attribute].items():
+                if k == None:
+                    k = 'Sources'
+                if k not in groups:
+                    groups.append(k)
+        return groups
+    
     def _iterate(self, data, expanded_data):
         """ _Iterate through all data, store the result expansion in extended dictionary """
         for attribute in SOURCE_KEYS:

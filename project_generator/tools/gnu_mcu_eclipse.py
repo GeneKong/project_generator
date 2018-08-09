@@ -299,12 +299,26 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         "-Wnon-virtual-dtor":"false",
         "-Wstrict-null-sentinel":"false",
         "-Wsign-promo":"false",
-        "-Weffc++":"false"
+        "-Weffc++":"false",
+        
+        #Linker
+        "-Xlinker--gc-sections":"false",
+        "-nostartfiles":"false",
+        "-nodefaultlibs":"false",
+        "-nostdlib":"false",
+        "-Xlinker--print-gc-sections":"false",
+        "-s":"false",
+        "-Xlinker--cref":"false",
+        "-Xlinker--print-map":"false",
+        "--specs=nosys.specs":"false",
+        "--specs=nano.specs":"false",
+        "-u_printf_float":"false",
+        "-u_scanf_float":"false",
+        "-v":"false",
         }
     
         self.GNU_MCU_STR_COMMAND2OPTIONS = {
-        #Linker
-        "-Xlinker--gc-sections":"", 
+        
         }
     
     @staticmethod
@@ -362,6 +376,8 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
             expanded_dic['groups'][group] = []
         self._iterate(self.workspace, expanded_dic)
 
+        expanded_dic['src_groups']  = self._get_src_groups(expanded_dic)
+
         expanded_dic["options"] = {}
         expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_optimization_gnuarmeclipse_id("")
         expanded_dic["options"]["debug"] = EclipseGnuMCU.get_debug_gnuarmeclipse_id("")
@@ -391,8 +407,8 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
                     expanded_dic["options"]["fpu"] = EclipseGnuMCU.get_mfpu_gnuarmeclipse_id(flag)
                 elif flag in ["-munaligned-access","-mno-unaligned-access"]:
                     expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id(flag)
-                elif flag in self.GNU_MCU_BOOL_COMMAND2OPTIONS:
-                    self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
+                elif flag.replace(" ","") in self.GNU_MCU_BOOL_COMMAND2OPTIONS:
+                    self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag.replace(" ","")] = "true"
                 elif flag.replace(" ","") in self.GNU_MCU_STR_COMMAND2OPTIONS:
                     self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag.replace(" ","")] = flag
                 elif name == "common" :
@@ -426,8 +442,6 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
             project_path, output['files']['cproj'] = self.gen_file_jinja(
                 'gnu_mcu_eclipse.lib.cproject.tmpl', expanded_dic, '.cproject', expanded_dic['output_dir']['path'])
         
-
-
         project_path, output['files']['proj_file'] = self.gen_file_jinja(
             'eclipse.project.tmpl', expanded_dic, '.project', expanded_dic['output_dir']['path'])
         return output

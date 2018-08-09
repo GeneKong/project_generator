@@ -3,13 +3,6 @@
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130" moduleId="org.eclipse.cdt.core.settings" name="Debug">
-				<externalSettings>
-					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/{{name}}"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/{{name}}/Debug"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="{{name}}" srcPrefixMapping="" srcRootPath=""/>
-					</externalSetting>
-				</externalSettings>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -56,7 +49,8 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn.871903717" name="Warn if struct is returned (-Wagreggate-return)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn" useByScannerDiscovery="true" value="{{options.value['-Waggregate-return']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal.1578062366" name="Warn if floats are compared as equal (-Wfloat-equal)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal" useByScannerDiscovery="true" value="{{options.value['-Wfloat-equal']}}" valueType="boolean"/>
 							
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other.504961091" name="Other debugging flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other" useByScannerDiscovery="true" value="-fstack-usage" valueType="string"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other.504961091" name="Other debugging flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other" useByScannerDiscovery="true" value="" valueType="string"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other.549974901" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other" useByScannerDiscovery="false" value="" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.620178780" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/{{name}}}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1343005018" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.212908998" name="GNU ARM Cross Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
@@ -69,7 +63,7 @@
 									<listOptionValue builtIn="false" value="&{{macro}}"/>
 									{%- endfor %}
 								</option>
-                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other.1608904997" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other" useByScannerDiscovery="false" value="{{options.other_asm_flags}}" valueType="string"/>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other.1608904997"  name="Other assembler flags"  superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other" useByScannerDiscovery="false" value="{{options.other_asm_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.319632072" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									{% for path in include_paths %} 
 									<listOptionValue builtIn="false" value="&quot;{{path}}&quot;"/> 
@@ -103,7 +97,7 @@
 									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 								</option>
-                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other.1761495060" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other" useByScannerDiscovery="true" value="{{options.other_cxx_flags}}" valueType="string"/>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other.1761495060"  name="Other compiler flags"   superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other" useByScannerDiscovery="true" value="{{options.other_cxx_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths.330913846" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									{% for path in include_paths %} 
 									<listOptionValue builtIn="false" value="&quot;{{path}}&quot;"/> 
@@ -138,9 +132,9 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-					    {% for path in source_paths %} 
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="{{path}}"/> 
-                        {% endfor %}						
+					    {% for group_name in src_groups %}
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="{{group_name}}"/> 
+                        {% endfor %}  						
 					</sourceEntries>
 				</configuration>
 			</storageModule>

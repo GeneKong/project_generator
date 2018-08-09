@@ -18,6 +18,7 @@ import logging
 import operator
 import copy
 import yaml
+# import json
 
 from .tools_supported import ToolsSupported
 from .tools.tool import get_tool_template
@@ -184,11 +185,15 @@ class Project:
         except IOError:
             raise IOError("The module.yaml in project:%s doesn't exist." % self.name)
 
-        self._update_from_src_dict(self.src_dicts)
+        self._update_from_src_dict(Project._dict_elim_none(self.src_dicts))
+        self.project['type'] = self.project['type'].lower()
         
-        if self.project['type'].lower() != 'exe':
+        # always copy portable file to destionation
+        self._copy_portable_to_destination()
+        
+        if self.project['type'] != 'exe':
             if self.parent:
-                self.parent.update_from_required(self)
+                self.parent.update_from_required(self, self.project['type'])
             else:
                 raise NameError ("'src' type project %s can't be root project." % (name))
         
@@ -201,7 +206,7 @@ class Project:
             else:
                 self.project['required'][subproj] = project_dicts
             self.sub_projects[subproj] = Project(subproj, self.project['required'][subproj], settings, gen, self)
-            if self.project['type'].lower() == 'src'and self.sub_projects[subproj].project['type'].lower() != 'src':
+            if self.project['type'] == 'src'and self.sub_projects[subproj].project['type'] != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
             self._inherit_parent_flags_and_macros(self.sub_projects[subproj])
                         
@@ -227,32 +232,33 @@ class Project:
                 elif override_str:
                     self.project[key] = src_dict[key]
         
-    def update_from_required(self, subproj):
+    def update_from_required(self, subproj, ptype):
         """
         update information from sub-src-project  
         """
-        if self.project['type'].lower() == 'src':
-            self.parent.update_from_required(subproj)
+        if self.project['type'] == 'src':
+            self.parent.update_from_required(subproj, ptype)
         
         #Need update for PATH
         src_project = copy.deepcopy(subproj.project)
         
         src_project.pop('required')
         src_project.pop('type')
-        if self.project['type'].lower() == 'lib':
+        if ptype == 'lib':
             src_project.pop('portable')
             src_project['files'].pop("sources")
             
-        if subproj.project['type'].lower() != "exe":
+        if ptype != "exe":
             #Merge search path
             if "search_paths" in src_project["linker"]:
+                src_project["linker"]["search_paths"] = []
                 for path in subproj.project["linker"]["search_paths"]:
                     if os.path.exists(path):
                         src_project["linker"]["search_paths"].append(path)
                     else:
                         src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))
                         
-        if subproj.project['type'].lower() == "lib":
+        if ptype == "lib":
             self.project["linker"]["libraries"].append(subproj.name)
             self.project["linker_search_paths"].append(os.path.join("..", subproj.name, "Debug"))
             
@@ -266,19 +272,20 @@ class Project:
                         src_project["files"]["includes"][key].append(path)
                     else:
                         src_project["files"]["includes"][key].append(os.path.join("..", subproj.name, path))
-
-            for key, value in subproj.project["files"]["sources"].items():
-                src_project["files"]["sources"][key] = []
-                for path in value:
-                    if os.path.exists(path):
-                        src_project["files"]["sources"][key].append(path)
-                    else:
-                        src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))
+            if ptype == "src":
+                for key, value in subproj.project["files"]["sources"].items():
+                    src_project["files"]["sources"][key] = []
+                    for path in value:
+                        if os.path.exists(path):
+                            src_project["files"]["sources"][key].append(path)
+                        else:
+                            src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))
                         
         #Merge tool_specific path                
         if "tool_specific" in src_project:
             for key, value in subproj.project["tool_specific"].items():
-                src_project["tool_specific"][key].pop('sources')
+                if ptype == "lib":
+                    src_project["tool_specific"][key].pop('sources')
                 if "includes" in value:
                     if type(value["includes"]) is list:
                         src_project["tool_specific"][key]["includes"] = []
@@ -296,7 +303,7 @@ class Project:
                                     src_project["tool_specific"][key]["includes"][k].append(path)
                                 else:
                                     src_project["tool_specific"][key]["includes"][k].append(os.path.join("..", subproj.name, path))
-                elif "sources" in value:
+                elif ptype == "src" and "sources" in value:
                     if type(value["sources"]) is list:
                         src_project["tool_specific"][key]["sources"] = []
                         for path in value["sources"]:
@@ -528,7 +535,13 @@ class Project:
 
         # Merge common project data with tool specific data
         self.export['template'] = self._get_tool_data('template', tool_keywords)
-        self.export['linker_search_paths'] = self.project['linker']['search_paths']
+        # fixed linker file search path
+        for path in self.project['linker']['search_paths']:
+            if os.path.exists(path):
+                self.export["linker_search_paths"].append(path)
+            else:
+                self.export["linker_search_paths"].append(os.path.join(self.name, path))
+                
         self.export['linker'] = self.project['linker']
         self.export['output_type'] = self.project['type']
         self.export['name'] = self.name
@@ -629,9 +642,6 @@ class Project:
         generated_files = {}
         result = 0
         exporter = ToolsSupported().get_tool(tool)
-
-        # always copy portable file to destionation
-        self._copy_portable_to_destination()
         
         # None is an error
         if exporter is None:
@@ -660,6 +670,7 @@ class Project:
         files = exporter(self.export, self.settings).export_project()
         generated_files[tool] = files
         self.generated_files = generated_files
+        
         return result
 
     def build(self, tool):
