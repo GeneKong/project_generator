@@ -44,7 +44,7 @@ class Generator:
                 yield sproj
                 self._generate_subproj(sproj)
     
-    def generate(self, name=''):
+    def generate(self, name='', tool='gnu_mcu_eclipse'):
         found = False
         if name != '':
             # process project first, workspaces afterwards
@@ -53,7 +53,7 @@ class Generator:
                     found = True
                     records = self.projects_dict['projects'][name]
                     self.reset_properties()
-                    project = Project(name, records,  self.settings, self)
+                    project = Project(name, tool, records,  self.settings, self)
                     yield project
                     for sproj in self._generate_subproj(project):
                         yield sproj
@@ -65,7 +65,7 @@ class Generator:
                     self.reset_properties()
                     if not records:
                         records = {}
-                    project = Project(name, records, self.settings, self)
+                    project = Project(name, tool, records, self.settings, self)
                     yield project
                     for sproj in self._generate_subproj(project):
                         yield sproj

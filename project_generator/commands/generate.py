@@ -25,7 +25,7 @@ def run(args):
     build_failed = False
     export_failed = False
     generated = True
-    for project in generator.generate(args.project):
+    for project in generator.generate(args.project, args.tool):
         generated = False
         if project.generate(args.tool, copied=args.copy, copy=args.copy) == -1:
             export_failed = True

@@ -134,7 +134,7 @@ class Project:
 
     """ Represents a project, which can be formed of many yaml files """
 
-    def __init__(self, name, project_dicts, settings, gen, parent = None):
+    def __init__(self, name, tool, project_dicts, settings, gen, parent = None):
         """ Initialise a project with a yaml file """
 
         if not project_dicts:
@@ -143,6 +143,7 @@ class Project:
 
         self.settings = settings
         self.name = name
+        self.tool = tool
         self.parent = parent
         self.basepath = os.path.sep.join([gen.basepath, name])
         if 'favors' in project_dicts:
@@ -205,7 +206,7 @@ class Project:
                 merge_without_override(self.project['required'][subproj], project_dicts)
             else:
                 self.project['required'][subproj] = project_dicts
-            self.sub_projects[subproj] = Project(subproj, self.project['required'][subproj], settings, gen, self)
+            self.sub_projects[subproj] = Project(subproj, tool, self.project['required'][subproj], settings, gen, self)
             if self.project['type'] == 'src'and self.sub_projects[subproj].project['type'] != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
             self._inherit_parent_flags_and_macros(self.sub_projects[subproj])
@@ -260,7 +261,7 @@ class Project:
                         
         if ptype == "lib":
             self.project["linker"]["libraries"].append(subproj.name)
-            self.project["linker_search_paths"].append(os.path.join("..", subproj.name, "Debug"))
+            self.project["linker_search_paths"].append(os.path.join("..", os.path.basename(self._get_output_dir_path(self.tool)), "Debug"))
             
         #Merge file path
         if "files" in src_project:
@@ -493,12 +494,12 @@ class Project:
                 continue
         return include_files
 
-    def _set_output_dir_path(self, tool, copied):
+    def _get_output_dir_path(self, tool):
         if self.settings.export_location_format != self.settings.DEFAULT_EXPORT_LOCATION_FORMAT:
             location_format = self.settings.export_location_format
         else:
-            if 'export_dir' in self.export and self.export['export_dir']:
-                location_format = self.export['export_dir']
+            if 'export_dir' in self.project and self.project['export_dir']:
+                location_format = self.project['export_dir']
             else:
                 location_format = self.settings.export_location_format
 
@@ -507,15 +508,7 @@ class Project:
             'project_name': self.name,
             'tool': tool,
         })
-
-        self.export['output_dir']['path'] = os.path.normpath(location)
-        path = self.export['output_dir']['path']
-        if copied:
-            # Sources were copied, therefore they should be in the exported folder
-            self.export['output_dir']['rel_path'] = ''
-            self.export['output_dir']['rel_count'] = 0
-        else:
-            self.export['output_dir']['rel_path'], self.export['output_dir']['rel_count'] = self._generate_output_dir(self.settings, path)
+        return location
 
     def _fill_export_dict(self, tool, copied=False):
         tool_keywords = []
@@ -527,7 +520,15 @@ class Project:
         # Set the template keys an get the relative path to fix all paths
         self.export = get_tool_template()
 
-        self._set_output_dir_path(tool, copied)
+        location = self._get_output_dir_path(tool)
+        self.export['output_dir']['path'] = os.path.normpath(location)
+        path = self.export['output_dir']['path']
+        if copied:
+            # Sources were copied, therefore they should be in the exported folder
+            self.export['output_dir']['rel_path'] = ''
+            self.export['output_dir']['rel_count'] = 0
+        else:
+            self.export['output_dir']['rel_path'], self.export['output_dir']['rel_count'] = self._generate_output_dir(self.settings, path)
 
         self._set_internal_files_data()
         self._set_internal_tool_data(tool_keywords)

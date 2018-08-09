@@ -55,7 +55,11 @@ def merge_recursive(*args):
 
         return output
     else:
-        if len(args) == 2 and args[1] is None:
+        if len(args) == 1 or (len(args) > 1 and args[1] is None):
+            return args[0]
+        elif (len(args) > 1 and args[0] is None):
+            return args[1]
+        elif type(args[0]) is str:
             return args[0]
         else:
             return reduce(operator.add, args)
