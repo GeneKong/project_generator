@@ -55,7 +55,10 @@ def merge_recursive(*args):
 
         return output
     else:
-        return reduce(operator.add, args)
+        if type(args[0]) is str and len(args) > 1:
+            return args[1] if args[1] else args[0]
+        else:
+            return reduce(operator.add, args)
     
 def merge_without_override(dest, src):
     """

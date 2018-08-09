@@ -15,13 +15,11 @@
 import copy
 import logging
 
-from collections import OrderedDict
 # eclipse works with linux paths
-from os.path import normpath, join, basename
+from os.path import normpath, join, basename, exists
 
 from .tool import Tool, Builder, Exporter
 from .gccarm import MakefileGccArm
-from ..util import SOURCE_KEYS
 
 logger = logging.getLogger('progen.tools.gnu_mcu_eclipse')
 
@@ -384,6 +382,15 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         expanded_dic["options"]["other_c_flags"]  = " ".join(c_flags)
         expanded_dic["options"]["other_cxx_flags"] = " ".join(cxx_flags)
         expanded_dic["options"]["other_asm_flags"] = " ".join(asm_flags)
+        
+        #
+        fix_gnu_mcu_include_paths = []
+        for path in expanded_dic["include_paths"]:
+            if not exists(path):
+                fix_gnu_mcu_include_paths.append("../" + path)
+            else:
+                fix_gnu_mcu_include_paths.append(path)
+        expanded_dic["include_paths"] = fix_gnu_mcu_include_paths
         
         # Project file
         project_path, output['files']['cproj'] = self.gen_file_jinja(

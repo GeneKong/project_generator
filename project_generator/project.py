@@ -102,12 +102,12 @@ class ProjectTemplate:
             'files': {
                 'includes': {},
                 'sources': {}
-            }
+            },
         }
         return data_template
 
     @staticmethod
-    def get_project_template(name="Default", output_type='exe', debugger=None, build_dir='build'):
+    def get_project_template(name="Default", output_type='exe', debugger=None, build_dir='build', port_dest = 'feConfig'):
         """ Project data (+ data) """
 
         project_template = {
@@ -119,6 +119,11 @@ class ProjectTemplate:
             'templates': [],          # templates
             'tool_specific':{},       # 
             'required': {},           # Tools which are supported,
+            'portable':{
+                'dest': port_dest,
+                'config': [],
+                'port': []
+            }
         }
         project_template.update(ProjectTemplate._get_common_data_template())
         return project_template
@@ -167,6 +172,10 @@ class Project:
                                     gen.merge_properties_without_override(favor['properties'])
                                 elif key == 'dimension':
                                     pass
+                                elif key == 'files' :
+                                    # files need careful merge
+                                    for ikey in favor[key]:
+                                        self._process_files_item(ikey, favor)
                                 elif key in self.project:
                                     self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], favor[key]))  
 
@@ -186,7 +195,10 @@ class Project:
         self.sub_projects = {}
         for subproj in self.project['required']:            
             gen.reset_properties()
-            merge_without_override(self.project['required'][subproj], project_dicts)
+            if self.project['required'][subproj]:
+                merge_without_override(self.project['required'][subproj], project_dicts)
+            else:
+                self.project['required'][subproj] = project_dicts
             self.sub_projects[subproj] = Project(subproj, self.project['required'][subproj], settings, gen, self)
             if self.project['type'].lower() == 'src'and self.sub_projects[subproj].project['type'].lower() != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
@@ -225,14 +237,15 @@ class Project:
         src_project = copy.deepcopy(subproj.project)
         for key in ["tool_specific", "templates", "files", "linker"]:
             pass
-        
+        #Merge search path
         if "search_paths" in src_project["linker"]:
             src_project["linker"]["search_paths"] = []
             for path in subproj.project["linker"]["search_paths"]:
                 if os.path.exists(path):
                     src_project["linker"]["search_paths"].append(path)
                 else:
-                    src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))                
+                    src_project["linker"]["search_paths"].append(os.path.join("..", subproj.name, path))
+        #Merge file path
         if "files" in src_project:
             src_project["files"]["includes"] = {}
             for key, value in subproj.project["files"]["includes"].items():
@@ -248,7 +261,8 @@ class Project:
                     if os.path.exists(path):
                         src_project["files"]["sources"][key].append(path)
                     else:
-                        src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))                
+                        src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))
+        #Merge tool_specific path                
         if "tool_specific" in src_project:
             for key, value in subproj.project["tool_specific"].items():
                 if "includes" in value:
@@ -331,16 +345,10 @@ class Project:
                         self._process_source_files(files)
 
     def _set_internal_macros_and_flags(self):
-        self.export['macros']['common'] = merge_recursive([], self.project['common']['macros'])
-        self.export['macros']['asm'] = merge_recursive([], self.project['asm']['macros'])
-        self.export['macros']['c'] = merge_recursive([], self.project['c']['macros'])
-        self.export['macros']['cxx'] = merge_recursive([], self.project['cxx']['macros'])
-        self.export['macros'] = Project._dict_elim_none(self.export['macros'])
-        
-        self.export['flags']['common'] = merge_recursive([], self.project['common']['flags'])
-        self.export['flags']['asm'] = merge_recursive([], self.project['asm']['flags'])
-        self.export['flags']['c'] = merge_recursive([], self.project['c']['flags'])
-        self.export['flags']['cxx'] = merge_recursive([], self.project['cxx']['flags'])
+        for dest in ['macros', 'flags']:
+            for src in ['common', 'c', 'cxx']:                
+                self.export[dest][src] = merge_recursive([], self.project[src][dest])                
+        self.export['macros'] = Project._dict_elim_none(self.export['macros'])        
         self.export['flags']['ld'] = merge_recursive([], self.project['linker']['flags'])
         self.export['flags'] = Project._dict_elim_none(self.export['flags'])
                 
@@ -562,6 +570,32 @@ class Project:
                     os.makedirs(os.path.join(self.settings.root, os.path.dirname(d)))
                 shutil.copy2(s,d)
 
+    def _copy_portable_to_destination(self):
+        """ Copies all project portable files to specified project """
+        d_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "include", self.name))        
+        for cfg in self.project['portable']['config']:
+            s_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, cfg))            
+            if os.path.isfile(s_cfg_path):
+                name,ext = os.path.splitext(os.path.basename(s_cfg_path))
+                if not os.path.exists(d_cfg_path):
+                    os.makedirs(d_cfg_path)
+                d_cfg_file = os.path.join(d_cfg_path, name+".h")
+                if not os.path.exists(d_cfg_file):
+                    shutil.copy2(s_cfg_path, d_cfg_file)
+                
+                self.project['files']['includes'].setdefault(self.project['portable']['dest'], []).append(os.path.relpath(d_cfg_file, self.basepath))            
+        d_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "port", self.name))  
+        for port in self.project['portable']['port']:
+            s_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, port))            
+            if os.path.isfile(s_port_path):
+                if not os.path.exists(d_port_path):
+                    os.makedirs(d_port_path)
+                d_port_file = os.path.join([d_port_path, os.path.basename(s_port_path)])
+                if not os.path.exists(d_port_file):
+                    shutil.copy2(s_port_path, d_port_file)
+                    
+                self.project['files']['sources'].setdefault(self.project['portable']['dest'], []).append(os.path.relpath(d_port_file, self.basepath))
+                
     def clean(self, tool):
         """ Clean a project """
 
@@ -582,6 +616,9 @@ class Project:
         result = 0
         exporter = ToolsSupported().get_tool(tool)
 
+        # always copy portable file to destionation
+        self._copy_portable_to_destination()
+        
         # None is an error
         if exporter is None:
             result = -1
@@ -591,6 +628,7 @@ class Project:
         if copy:
             logger.debug("Copying sources to the output directory")
             self._copy_sources_to_generated_destination()
+        
         # dump a log file if debug is enabled
         if logger.isEnabledFor(logging.DEBUG):
             dump_data = {}
