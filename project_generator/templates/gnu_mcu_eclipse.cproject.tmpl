@@ -5,9 +5,9 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<externalSettings>
 					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/{{ProjName}}"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/{{ProjName}}/Debug"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="{{ProjName}}" srcPrefixMapping="" srcRootPath=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/{{name}}"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/{{name}}/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="{{name}}" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 				<extensions>
@@ -32,7 +32,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format.1353367273" name="Debug format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.format" useByScannerDiscovery="true"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name.1234298524" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.toolchain.name" useByScannerDiscovery="false" value="GNU Tools for ARM Embedded Processors" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.325857832" name="Architecture" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.architecture" useByScannerDiscovery="false" value="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.arm" valueType="enumerated"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1563404166" name="ARM family" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family" useByScannerDiscovery="false" value="{{options.mcu}}" valueType="enumerated"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family.1563404166" name="ARM family" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.family" useByScannerDiscovery="false" value="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.mcpu.{{options.mcu}}" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.instructionset.1917748636" name="Instruction set" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.instructionset" useByScannerDiscovery="false" value="ilg.gnuarmeclipse.managedbuild.cross.option.arm.target.instructionset.{{options.instructionset}}" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix.732917459" name="Prefix" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix" useByScannerDiscovery="false" value="arm-none-eabi-" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.c.965726611" name="C compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.c" useByScannerDiscovery="false" value="gcc" valueType="string"/>
@@ -52,20 +52,20 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn.1150401198" name="Enable all common warnings (-Wall)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.allwarn" useByScannerDiscovery="true" value="{{options.value['-Wall']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.extrawarn.612002" name="Enable extra warnings (-Wextra)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.extrawarn" useByScannerDiscovery="true" value="{{options.value['-Wextra']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.logicalop.1146044639" name="Warn if suspicious logical ops (-Wlogical-op)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.logicalop" useByScannerDiscovery="true" value="{{options.value['-Wlogical-op']}}" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn.871903717" name="Warn if struct is returned (-Wagreggate-return)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn" useByScannerDiscovery="true" value="{{options.value['-Wagreggate-return']}}" valueType="boolean"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn.871903717" name="Warn if struct is returned (-Wagreggate-return)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.agreggatereturn" useByScannerDiscovery="true" value="{{options.value['-Waggregate-return']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal.1578062366" name="Warn if floats are compared as equal (-Wfloat-equal)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.warnings.floatequal" useByScannerDiscovery="true" value="{{options.value['-Wfloat-equal']}}" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other.504961091" name="Other debugging flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other" useByScannerDiscovery="true" value="-fstack-usage" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.620178780" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/{{ProjName}}}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1343005018" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
+							<builder buildPath="${workspace_loc:/{{name}}}/Debug" id="ilg.gnuarmeclipse.managedbuild.cross.builder.1343005018" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.212908998" name="GNU ARM Cross Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor.438221336" name="Use preprocessor" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs.1975736882" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
-									{% for macro in macros.common %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
-									{% endfor %}
-									{% for macro in macros.assemble %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
-									{% endfor %}
+									{%- for macro in macros.common %} 
+									<listOptionValue builtIn="false" value="{{macro}}"/>
+									{%- endfor %}
+									{%- for macro in macros.assemble %} 
+									<listOptionValue builtIn="false" value="&{{macro}}"/>
+									{%- endfor %}
 								</option>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other.1608904997" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other" useByScannerDiscovery="false" value="{{options.other_asm_flags}}" valueType="string"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.319632072" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" useByScannerDiscovery="true" valueType="includePath">
@@ -78,10 +78,10 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1365367591" name="GNU ARM Cross C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.2005275699" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
 									{% for macro in macros.common %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
+									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 									{% for macro in macros.ccompile %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
+									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 								</option>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other.989070667" name="Other compiler flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other" useByScannerDiscovery="true" value="{{options.other_c_flags}}" valueType="string"/>
@@ -95,10 +95,10 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1569442862" name="GNU ARM Cross C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs.954985342" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
 									{% for macro in macros.common %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
+									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 									{% for macro in macros.cxxcompile %} 
-									<listOptionValue builtIn="false" value="&quot;{{macro}}&quot;"/>
+									<listOptionValue builtIn="false" value="{{macro}}"/>
 									{% endfor %}
 								</option>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other.1761495060" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other" useByScannerDiscovery="true" value="{{options.other_cxx_flags}}" valueType="string"/>
@@ -115,10 +115,10 @@
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.898106000" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1893678234" name="GNU ARM Cross C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections.434829536" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections" value="{{options.value['-Xlinker --gc-sections']}}" valueType="boolean"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections.434829536" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections" value="{{options.value['-Xlinker--gc-sections']}}" valueType="boolean"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.2081009874" name="GNU ARM Cross C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections.1874929851" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections" value="{{options.value['-Xlinker --gc-sections']}}" valueType="boolean"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections.1874929851" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections" value="{{options.value['-Xlinker--gc-sections']}}" valueType="boolean"/>
 							</tool>
                             <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other.549974901" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other" useByScannerDiscovery="false" value="{{options.other_ld_flags}}" valueType="string"/>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver.265382493" name="GNU ARM Cross Archiver" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver"/>
@@ -142,25 +142,24 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
-		</cconfiguration>		
-	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="{{ProjName}}.ilg.gnuarmeclipse.managedbuild.cross.target.lib.74961628" name="Static Library" projectType="ilg.gnuarmeclipse.managedbuild.cross.target.lib"/>
-	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130;ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1569442862;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.898106000">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130;ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1365367591;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.543122811">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
-	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/{{ProjName}}"/>
-		</configuration>
-	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+		</cconfiguration>
+	</storageModule>		
+    <storageModule moduleId="scannerConfiguration">
+        <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+        <scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130;ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1569442862;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.898106000">
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+        </scannerConfigBuildInfo>
+        <scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.release.312311641;ilg.gnuarmeclipse.managedbuild.cross.config.lib.release.312311641.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.519955728;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.550203481">
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+        </scannerConfigBuildInfo>
+        <scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130;ilg.gnuarmeclipse.managedbuild.cross.config.lib.debug.242331130.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1365367591;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.543122811">
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+        </scannerConfigBuildInfo>
+        <scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.lib.release.312311641;ilg.gnuarmeclipse.managedbuild.cross.config.lib.release.312311641.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.375371991;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1829462461">
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+        </scannerConfigBuildInfo>
+    </storageModule>
+    <storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+    <storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+    <storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

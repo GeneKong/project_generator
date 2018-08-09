@@ -27,7 +27,7 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources> {% for group_name,files in groups.items() %} {% for file in files %}
+	<linkedResources>{% for group_name,files in groups.items() %} {% for file in files %}
 		<link>
 			<name>{{group_name}}/{{file.name}}</name>
 			<type>1</type>

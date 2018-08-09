@@ -199,7 +199,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     
     @staticmethod
     def get_optimization_gnuarmeclipse_id(command):
-        trip_cmd = command.strip().lower()
+        trip_cmd = command.strip()
         if trip_cmd not in EclipseGnuMCU.OPTIMIZATIONLEVEL_COMMAND2ID:
             trip_cmd = "-O2"
         return EclipseGnuMCU.OPTIMIZATIONLEVEL_COMMAND2ID[trip_cmd]
@@ -243,9 +243,17 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         if trip_cmd not in EclipseGnuMCU.UNALIGNEDACCESS_COMMAND2ID:
             trip_cmd = ""
         return EclipseGnuMCU.UNALIGNEDACCESS_COMMAND2ID[trip_cmd]
-    
-    # all bool gnu mcu eclipse options store here
-    GNU_MCU_BOOL_COMMAND2OPTIONS = {
+        
+    #Other debug flags, Other Warning flag, Other Optimization flag
+            
+    def __init__(self, workspace, env_settings):
+        self.definitions = 0
+        self.exporter = MakefileGccArm(workspace, env_settings)
+        self.workspace = workspace
+        self.env_settings = env_settings
+            # all bool gnu mcu eclipse options store here
+        self.GNU_MCU_BOOL_COMMAND2OPTIONS = {
+        #C
         "-fmessage-length=0":"false",
         "-fsigned-char":"false",
         "-ffunction-sections":"false",
@@ -254,23 +262,20 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         "-Wall":"false",
         "-Wextra":"false",
         "-Wlogical-op":"false",
-        "-Wagreggate-return":"false",
+        "-Waggregate-return":"false",
         "-Wfloat-equal":"false",
+        #CXX
         "-Wabi":"false",
         "-fno-exceptions":"false",
         "-fno-rtti":"false",
         "-fno-use-cxa-atexit":"false",
-        "-fno-threadsafe-statics":"false",
-        "-Xlinker --gc-sections":"false"
+        "-fno-threadsafe-statics":"false"
         }
     
-    #Other debug flags, Other Warning flag, Other Optimization flag
-            
-    def __init__(self, workspace, env_settings):
-        self.definitions = 0
-        self.exporter = MakefileGccArm(workspace, env_settings)
-        self.workspace = workspace
-        self.env_settings = env_settings
+        self.GNU_MCU_STR_COMMAND2OPTIONS = {
+        #Linker
+        "-Xlinker--gc-sections":"", 
+        }
     
     @staticmethod
     def get_toolnames():
@@ -290,6 +295,21 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
     def _expand_sort_key(self, file) :
         return file['name'].lower()
 
+    def _fixed_path_2_unix_style(self, item):
+        nitem = None
+        if type(item) == list:
+            nitem = []
+            for path in item:
+                nitem.append(path.replace('\\', '/'))
+            return nitem
+        elif type(item) == dict:
+            nitem = {}
+            for k,v in item.items():
+                nitem[k] = self._fixed_path_2_unix_style(v)
+            return nitem
+        else:
+            return item.replace('\\', '/')
+    
     def export_workspace(self):
         logger.debug("Current version of CoIDE does not support workspaces")
 
@@ -297,28 +317,15 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         """ Processes groups and misc options specific for eclipse, and run generator """
 
         output = copy.deepcopy(self.generated_project)
-        data_for_gnu_mcu = self.workspace.copy()
-
-        self.exporter.process_data_for_makefile(data_for_gnu_mcu)   
-
-        # process path format in windows
-        for name in ['toolchain_bin_path',
-                     'lib_paths', 'include_paths', 'source_paths',
-                     'source_files_c', 'source_files_cpp', 'source_files_s']:
-            if type(data_for_gnu_mcu[name]) == list:
-                new_paths = []
-                for path in data_for_gnu_mcu[name]:
-                    new_paths.append(path.replace('\\', '/'))
-                data_for_gnu_mcu[name] = new_paths
-            elif data_for_gnu_mcu[name]:
-                data_for_gnu_mcu[name] = data_for_gnu_mcu[name].replace('\\', '/')
-        new_paths = []
-        for path in data_for_gnu_mcu['linker']['search_paths']:
-            new_paths.append(path.replace('\\', '/'))
-        data_for_gnu_mcu['linker']['search_paths'] = new_paths
-        
         expanded_dic = self.workspace.copy()
-        expanded_dic['rel_path'] = data_for_gnu_mcu['output_dir']['rel_path']
+        
+        # process path format in windows
+        for name in ['include_paths', 'source_paths','include_paths',
+                     'source_files_c', 'source_files_cpp', 'source_files_s']:            
+            expanded_dic[name] = self._fixed_path_2_unix_style(expanded_dic[name])
+            
+        expanded_dic['linker']['search_paths'] = self._fixed_path_2_unix_style(expanded_dic['linker']['search_paths'])
+                        
         groups = self._get_groups(expanded_dic)
         expanded_dic['groups'] = {}
         for group in groups:
@@ -338,38 +345,41 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         cxx_flags = []
         asm_flags = []
         ld_flags = []
-        for name in ["common_flags", "ld_flags", "c_flags", "cxx_flags", "asm_flags"] :
-            for flag in data_for_gnu_mcu[name] :
+        for name in ["common", "ld", "c", "cxx", "asm"] :
+            for flag in expanded_dic['flags'][name] :
                 if flag.startswith("-O") :
                     expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_optimization_gnuarmeclipse_id(flag)
                 elif flag.startswith("-g") :
-                    expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_debug_gnuarmeclipse_id(flag)
+                    expanded_dic["options"]["debug"] = EclipseGnuMCU.get_debug_gnuarmeclipse_id(flag)
                 elif flag.startswith("-mcpu=") :
                     expanded_dic["options"]["mcu"] = EclipseGnuMCU.get_mcpu_gnuarmeclipse_id(flag)
                 elif flag in ["-mthumb", "-marm"] :
-                    expanded_dic["options"]["mcu"] = EclipseGnuMCU.get_instructionset_gnuarmeclipse_id(flag)
-                elif flag.starswith("-mfloat-abi=") :
+                    expanded_dic["options"]["instructionset"] = EclipseGnuMCU.get_instructionset_gnuarmeclipse_id(flag)
+                elif flag.startswith("-mfloat-abi=") :
                     expanded_dic["options"]["fpuabi"] = EclipseGnuMCU.get_fpuabi_gnuarmeclipse_id(flag)
-                elif flag.starswith("-mfpu=") :
+                elif flag.startswith("-mfpu=") :
                     expanded_dic["options"]["fpu"] = EclipseGnuMCU.get_mfpu_gnuarmeclipse_id(flag)
                 elif flag in ["-munaligned-access","-mno-unaligned-access"]:
                     expanded_dic["options"]["unalignedaccess"] = EclipseGnuMCU.get_unalignedaccess_gnuarmeclipse_id(flag)
-                elif flag in EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS:
-                    EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
+                elif flag in self.GNU_MCU_BOOL_COMMAND2OPTIONS:
+                    self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag] = "true"
+                elif flag.replace(" ","") in self.GNU_MCU_STR_COMMAND2OPTIONS:
+                    self.GNU_MCU_BOOL_COMMAND2OPTIONS[flag.replace(" ","")] = flag
                 elif name == "common_flags" :
                     c_flags.append(flag)
                     cxx_flags.append(flag)
                     asm_flags.append(flag)
-                elif name == "c_flags" :
+                elif name == "c" :
                     c_flags.append(flag)
-                elif name == "cxx_flags" :
+                elif name == "cxx" :
                     cxx_flags.append(flag)
-                elif name == "asm_flags" :
+                elif name == "asm" :
                     asm_flags.append(flag)
                 else:
                     ld_flags.append(flag)
 
-        expanded_dic["options"]["value"] = EclipseGnuMCU.GNU_MCU_BOOL_COMMAND2OPTIONS
+        expanded_dic["options"]["value"] = self.GNU_MCU_BOOL_COMMAND2OPTIONS
+        expanded_dic["options"]["value"].update(self.GNU_MCU_STR_COMMAND2OPTIONS)
         expanded_dic["options"]["other_ld_flags"] = " ".join(ld_flags)
         expanded_dic["options"]["other_c_flags"]  = " ".join(c_flags)
         expanded_dic["options"]["other_cxx_flags"] = " ".join(cxx_flags)
@@ -377,10 +387,10 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         
         # Project file
         project_path, output['files']['cproj'] = self.gen_file_jinja(
-            'gnu_mcu_eclipse.cproject.tmpl', expanded_dic, '.cproject', data_for_gnu_mcu['output_dir']['path'])
+            'gnu_mcu_eclipse.cproject.tmpl', expanded_dic, '.cproject', expanded_dic['output_dir']['path'])
 
         project_path, output['files']['proj_file'] = self.gen_file_jinja(
-            'eclipse.project.tmpl', expanded_dic, '.project', data_for_gnu_mcu['output_dir']['path'])
+            'eclipse.project.tmpl', expanded_dic, '.project', expanded_dic['output_dir']['path'])
         return output
 
     def get_generated_project_files(self):

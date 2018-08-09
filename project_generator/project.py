@@ -81,15 +81,15 @@ class ProjectTemplate:
                 'flags': [],
                 'macros': []
             },
-            'assemble': {
+            'asm': {
                 'flags': [],
                 'macros': []
             },
-            'ccompile': {
+            'c': {
                 'flags': [],
                 'macros': []
             },
-            'cxxcompile': {
+            'cxx': {
                 'flags': [],
                 'macros': []
             },
@@ -130,14 +130,16 @@ class Project:
     def __init__(self, name, project_dicts, settings, gen, parent = None):
         """ Initialise a project with a yaml file """
 
+        if not project_dicts:
+            project_dicts = {}
         assert type(project_dicts) is dict, "Project %s records/dics must be a dict" % (name, project_dicts) 
 
         self.settings = settings
         self.name = name
         self.parent = parent
         self.basepath = os.path.sep.join([gen.basepath, name])
-        if 'favor' in project_dicts:
-            self.favors = project_dicts['favor']
+        if 'favors' in project_dicts:
+            self.favors = project_dicts['favors']
         else:
             self.favors = {}
         if 'properties' in project_dicts:
@@ -188,8 +190,13 @@ class Project:
             self.sub_projects[subproj] = Project(subproj, self.project['required'][subproj], settings, gen, self)
             if self.project['type'].lower() == 'src'and self.sub_projects[subproj].project['type'].lower() != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
-            
+            self._inherit_parent_flags_and_macros(self.sub_projects[subproj])
+                        
         self.generated_files = {}
+    
+    def _inherit_parent_flags_and_macros(self, subproj):
+        for key in ['common', 'asm', 'c', 'cxx']:
+            subproj.project[key] =  Project._dict_elim_none(merge_recursive(self.project[key], subproj.project[key]))
     
     def _update_from_src_dict(self, src_dict, override_str = True):
         for key in src_dict:
@@ -325,18 +332,19 @@ class Project:
 
     def _set_internal_macros_and_flags(self):
         self.export['macros']['common'] = merge_recursive([], self.project['common']['macros'])
-        self.export['macros']['assemble'] = merge_recursive([], self.project['assemble']['macros'])
-        self.export['macros']['ccompile'] = merge_recursive([], self.project['ccompile']['macros'])
-        self.export['macros']['cxxcompile'] = merge_recursive([], self.project['cxxcompile']['macros'])
+        self.export['macros']['asm'] = merge_recursive([], self.project['asm']['macros'])
+        self.export['macros']['c'] = merge_recursive([], self.project['c']['macros'])
+        self.export['macros']['cxx'] = merge_recursive([], self.project['cxx']['macros'])
         self.export['macros'] = Project._dict_elim_none(self.export['macros'])
         
-        self.export['compile_flags']['common'] = merge_recursive([], self.project['common']['flags'])
-        self.export['compile_flags']['assemble'] = merge_recursive([], self.project['assemble']['flags'])
-        self.export['compile_flags']['ccompile'] = merge_recursive([], self.project['ccompile']['flags'])
-        self.export['compile_flags']['cxxcompile'] = merge_recursive([], self.project['cxxcompile']['flags'])
-        self.export['compile_flags'] = Project._dict_elim_none(self.export['compile_flags'])
+        self.export['flags']['common'] = merge_recursive([], self.project['common']['flags'])
+        self.export['flags']['asm'] = merge_recursive([], self.project['asm']['flags'])
+        self.export['flags']['c'] = merge_recursive([], self.project['c']['flags'])
+        self.export['flags']['cxx'] = merge_recursive([], self.project['cxx']['flags'])
+        self.export['flags']['ld'] = merge_recursive([], self.project['linker']['flags'])
+        self.export['flags'] = Project._dict_elim_none(self.export['flags'])
                 
-    def _process_include_files(self, files, use_group_name = 'default'):
+    def _process_include_files(self, files, use_group_name = 'default', add_basepath = True):
         # If it's dic add it , if file, add it to files
         use_includes = []
         if type(files) == dict:
@@ -352,9 +360,12 @@ class Project:
             self.export['include_files'][use_group_name] = []
 
         for include_file in use_includes:
-            include_file = include_file.replace('\\', '/')
             # include might be set to None - empty yaml list
             if include_file:
+                if not add_basepath:
+                    include_file = os.path.normpath(include_file)
+                else:
+                    include_file = os.path.normpath(os.path.join(self.basepath, include_file))
                 if os.path.isdir(include_file):
                     # its a directory
                     dir_path = include_file
@@ -498,6 +509,7 @@ class Project:
         self.export['linker_search_paths'] = self.project['linker']['search_paths']
         self.export['linker'] = self.project['linker']
         self.export['output_type'] = self.project['type']
+        self.export['name'] = self.name
         
         fix_paths(self.export, self.export['output_dir']['rel_path'],
                    list(FILES_EXTENSIONS.keys()) + ['include_paths', 'source_paths', 'linker_search_paths'])

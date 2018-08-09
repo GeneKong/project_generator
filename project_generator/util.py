@@ -105,7 +105,11 @@ class PartialFormatter(string.Formatter):
 def fix_properties_in_context(dest, prop):
     def userVar_sub(matchobj):
         if matchobj.group(1) in prop:
-            return prop[matchobj.group(1)]
+            ans = prop[matchobj.group(1)]
+            if type(ans) != str:
+                raise SystemError("Found property:%s is list type." % matchobj.group(1))
+            else:
+                return ans
         else :
             raise SystemError("Found property:%s can be resolved." % matchobj.group(1))
     

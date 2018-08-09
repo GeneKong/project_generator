@@ -41,7 +41,7 @@ project_1_yaml = {
         'flags': ['-mcpu=cortex-m4', '-mthumb'],
         'macros': ['MACRO1', 'MACRO2', None],
     },
-    'cxxcompile': {
+    'cxx': {
         'flags': ['-std=gnu++11']
     },
     'linker': {
@@ -154,7 +154,7 @@ projects_yaml = {
             'properties': {
                 'prop_1':'override_1',
             },
-            'favor': {
+            'favors': {
                 'dim_1':'favor_1_2',
                 'dim_2':'favor_2_1'
             }

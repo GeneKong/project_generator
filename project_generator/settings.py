@@ -51,7 +51,10 @@ class ProjectSettings:
                         self.templates[k] = v['template']
 
             if 'export_dir' in settings:
-                self.export_location_format = normpath(settings['export_dir'][0])
+                if type(settings['export_dir']) is list:
+                    self.export_location_format = normpath(settings['export_dir'][0])
+                else:
+                    self.export_location_format = normpath(settings['export_dir'])
             if 'root' in settings:
                 self.root = normpath(settings['root'][0])
 

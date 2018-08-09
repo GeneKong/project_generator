@@ -37,7 +37,13 @@ class Generator:
 
         if 'settings' in self.projects_dict:
             self.settings.update(self.projects_dict['settings'])
-        
+    
+    def _generate_subproj(self, project):
+        for k, sproj in project.sub_projects.items():
+            if sproj.project['type'].lower() != "src":
+                yield sproj
+                self._generate_subproj(sproj)
+    
     def generate(self, name=''):
         found = False
         if name != '':
@@ -46,8 +52,11 @@ class Generator:
                 if name in self.projects_dict['projects'].keys():
                     found = True
                     records = self.projects_dict['projects'][name]
-                    yield Project(name, records,  self.settings, self)
                     self.reset_properties()
+                    project = Project(name, records,  self.settings, self)
+                    yield project
+                    for sproj in self._generate_subproj(project):
+                        yield sproj
         else:
             if 'projects' in self.projects_dict:
                 found = True
@@ -56,7 +65,10 @@ class Generator:
                     self.reset_properties()
                     if not records:
                         records = {}
-                    yield Project(name, records, self.settings, self)                    
+                    project = Project(name, records, self.settings, self)
+                    yield project
+                    for sproj in self._generate_subproj(project):
+                        yield sproj
 
         if not found:
             logging.error("You specified an invalid project name.")

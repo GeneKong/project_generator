@@ -73,15 +73,16 @@ def get_tool_template():
         },
         "macros": {
             "common" : [],
-            "assemble" : [],
-            "ccompile" : [],
-            "cxxcompile" : []
+            "asm" : [],
+            "c" : [],
+            "cxx" : []
             },
-        "compile_flags": {
+        "flags": {
             "common" : [],
-            "assemble" : [],
-            "ccompile" : [],
-            "cxxcompile" : []
+            "asm" : [],
+            "c" : [],
+            "cxx" : [],
+            "ld" : []
             },
         "template": None,
         "misc": {}        
