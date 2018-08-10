@@ -206,7 +206,7 @@ class Uvision(Tool, Builder, Exporter):
 
     @staticmethod
     def get_toolchain():
-        return 'uvision'
+        return 'armcc'
 
     def _expand_one_file(self, source, new_data, extension):
         return {"FilePath": source, "FileName": basename(source),
@@ -315,7 +315,7 @@ class Uvision(Tool, Builder, Exporter):
             raise RuntimeError("Target %s is not supported. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
         mcu_def_dic = pro_def.get_tool_definition(expanded_dic['target'].lower())
         if not mcu_def_dic:
-             raise RuntimeError(
+            raise RuntimeError(
                 "Target definitions were not found for %s. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
         logger.debug("Mcu definitions: %s" % mcu_def_dic)
         uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Device'] = mcu_def_dic['TargetOption']['Device'][0]
@@ -350,7 +350,7 @@ class Uvision(Tool, Builder, Exporter):
             raise RuntimeError("Target %s is not supported. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
         mcu_def_dic = pro_def.get_tool_definition(expanded_dic['target'].lower())
         if not mcu_def_dic:
-             raise RuntimeError(
+            raise RuntimeError(
                 "Target definitions were not found for %s. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
         logger.debug("Mcu definitions: %s" % mcu_def_dic)
 

@@ -27,10 +27,10 @@ def run(args):
     generated = True
     for project in generator.generate(args.project, args.tool):
         generated = False
-        if project.generate(args.tool, copied=args.copy, copy=args.copy) == -1:
+        if project.generate(copied=args.copy, copy=args.copy) == -1:
             export_failed = True
         if args.build:
-            if project.build(args.tool) == -1:
+            if project.build() == -1:
                 build_failed = True
     if build_failed or export_failed or generated:
         return -1
@@ -43,9 +43,7 @@ def setup(subparser):
     subparser.add_argument(
         "-p", "--project", help="Project to be generated", default = '')
     subparser.add_argument(
-        "-s", "--prop", help="Special properties used for generated", default = 'properties.yaml')
-    subparser.add_argument(
-        "-t", "--tool", help="Create project files for provided tool",
+        "-t", "--tool", help="Create project files for provided tool", default='gnu_mcu_eclipse',
         type=argparse_string_type(str.lower, False), choices=list(ToolsSupported.TOOLS_DICT.keys()) + list(ToolsSupported.TOOLS_ALIAS.keys()))
     subparser.add_argument(
         "-b", "--build", action="store_true", help="Build defined projects")

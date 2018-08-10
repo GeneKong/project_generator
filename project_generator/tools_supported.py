@@ -29,10 +29,10 @@ class ToolsSupported:
 
     # Default tools - aliases
     TOOLS_ALIAS = {
-        'uvision':       'uvision4',
+        'uvision':       'uvision5',
         'iar':           'iar_arm',
-        'make_gcc':      'make_gcc_arm',
-        'gcc_arm':       'make_gcc_arm',
+        'make_armcc':    'armcc',
+        'make_gcc_arm':  'gcc_arm',
         'eclipse':       'eclipse_make_gcc_arm',
         'gnu_mcu':       'gnu_mcu_eclipse',
         'sublime':       'sublime_make_gcc_arm',
@@ -51,8 +51,8 @@ class ToolsSupported:
         'uvision4':             Uvision,
         'uvision5':             Uvision5,
         'coide':                Coide,
-        'make_gcc_arm':         MakefileGccArm,
-        'make_armcc':           MakefileArmcc,
+        'gcc_arm':              MakefileGccArm,
+        'armcc':                MakefileArmcc,
         'eclipse_make_gcc_arm': EclipseMakeGccARM,
         'gnu_mcu_eclipse':      EclipseGnuMCU,
         'sublime_make_gcc_arm': SublimeTextMakeGccARM,
