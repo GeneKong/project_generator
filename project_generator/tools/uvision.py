@@ -24,8 +24,6 @@ from codecs import open
 from os import getcwd
 from os.path import basename, join, normpath
 from collections import OrderedDict
-from project_generator_definitions.definitions import ProGenDef
-
 from .tool import Tool, Builder, Exporter
 from ..util import SOURCE_KEYS
 
@@ -164,10 +162,10 @@ class Uvision(Tool, Builder, Exporter):
     # this does not provide all options within a project, most usable options are
     # exposed via command line, the rest is covered via template project files
     FLAGS_TO_UVISION = {
-        'asm_flags': 'Aads',
-        'c_flags': 'Cads',
-        'cxx_flags': 'Cads',
-        'ld_flags':  'LDads',
+        'asm': 'Aads',
+        'c': 'Cads',
+        'cxx': 'Cads',
+        'ld':  'LDads',
     }
 
     ERRORLEVEL = {
@@ -242,19 +240,54 @@ class Uvision(Tool, Builder, Exporter):
         self._uvproj_clean_xmldict(uvproj_dic['Cads']['VariousControls'])
         self._uvproj_clean_xmldict(uvproj_dic['LDads'])
         uvproj_dic['LDads']['ScatterFile'] = project_dic['linker_file']
-
+        try:
+            AdsCpuType = re.search('CPUTYPE\((.*?)\)', project_dic["TargetOption"]["Cpu"][0])
+            if AdsCpuType and AdsCpuType.group(1):
+                uvproj_dic['ArmAdsMisc']['AdsCpuType'] = AdsCpuType.group(1)
+        except (IndexError):
+            pass
+        try:
+            IRAM = re.search('IRAM\(\s*(.*?)\s*,\s*(.*?)\s*\)', project_dic["TargetOption"]["Cpu"][0])
+            if IRAM and IRAM.group(2):
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['IRAM']['StartAddress'] = IRAM.group(1)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['IRAM']['Size'] = IRAM.group(2)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT9']['StartAddress'] = IRAM.group(1)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT9']['Size'] = IRAM.group(2)
+        except (IndexError, KeyError):
+            pass
+        try:
+            IRAM2 = re.search('IRAM2\(\s*(.*?)\s*,\s*(.*?)\s*\)', project_dic["TargetOption"]["Cpu"][0])
+            if IRAM2 and IRAM2.group(2):
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT10']['StartAddress'] = IRAM2.group(1)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT10']['Size'] = IRAM2.group(2)
+        except (IndexError, KeyError):
+            pass
+        try:
+            IROM = re.search('IROM\(\s*(.*?)\s*,\s*(.*?)\s*\)', project_dic["TargetOption"]["Cpu"][0])
+            if IROM and IROM.group(2):
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['IROM']['StartAddress'] = IROM.group(1)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['IROM']['Size'] = IROM.group(2)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT4']['StartAddress'] = IROM.group(1)
+                uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT4']['Size'] = IROM.group(2)
+        except (IndexError, KeyError):
+            pass
+        
         uvproj_dic['Cads']['VariousControls']['IncludePath'] = '; '.join(project_dic['include_paths']).encode('utf-8')
-        uvproj_dic['Cads']['VariousControls']['Define'] = ', '.join(project_dic['macros']).encode('utf-8')
+        macros = []
+        for key in project_dic['macros']:
+            for macro in project_dic['macros'][key]:
+                macros.append(macro)
+        uvproj_dic['Cads']['VariousControls']['Define'] = ', '.join(macros).encode('utf-8')
         if project_dic['macros']:
-            uvproj_dic['Aads']['VariousControls']['MiscControls'] = '--cpreproc --cpreproc_opts=-D' + ',-D'.join(project_dic['macros'])
+            uvproj_dic['Aads']['VariousControls']['MiscControls'] = '--cpreproc --cpreproc_opts=-D' + ',-D'.join(macros)
 
-        for misc_keys in project_dic['misc'].keys():
+        for misc_keys in project_dic['flags'].keys():
             # ld-flags dont follow the same as asm/c flags, why?!? Please KEIL fix this
-            if misc_keys == 'ld_flags':
-                for item in project_dic['misc'][misc_keys]:
+            if misc_keys == 'ld':
+                for item in project_dic['flags'][misc_keys]:
                     uvproj_dic[self.FLAGS_TO_UVISION[misc_keys]]['Misc'] += ' ' + item
             else:
-                for item in project_dic['misc'][misc_keys]:
+                for item in project_dic['flags'][misc_keys]:
                     uvproj_dic[self.FLAGS_TO_UVISION[misc_keys]]['VariousControls']['MiscControls'] += ' ' + item
 
     def _uvproj_set_TargetCommonOption(self, uvproj_dic, project_dic):
@@ -310,64 +343,44 @@ class Uvision(Tool, Builder, Exporter):
         return project_path, uvmpw
 
     def _set_target(self, expanded_dic, uvproj_dic, tool_name):
-        pro_def = ProGenDef(tool_name)
-        if not pro_def.is_supported(expanded_dic['target'].lower()):
-            raise RuntimeError("Target %s is not supported. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
-        mcu_def_dic = pro_def.get_tool_definition(expanded_dic['target'].lower())
-        if not mcu_def_dic:
-            raise RuntimeError(
-                "Target definitions were not found for %s. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
-        logger.debug("Mcu definitions: %s" % mcu_def_dic)
-        uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Device'] = mcu_def_dic['TargetOption']['Device'][0]
-        uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['DeviceId'] = mcu_def_dic['TargetOption']['DeviceId'][0]
+        uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Device'] = expanded_dic['TargetOption']['Device'][0]
+        if expanded_dic['TargetOption']['DeviceId']:
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['DeviceId'] = expanded_dic['TargetOption']['DeviceId'][0]
         try:
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Vendor'] = mcu_def_dic['TargetOption']['Vendor'][0]
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Cpu'] = mcu_def_dic['TargetOption']['Cpu'][0].encode('utf-8')
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['FlashDriverDll'] = str(mcu_def_dic['TargetOption']['FlashDriverDll'][0]).encode('utf-8')
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['SFDFile'] = mcu_def_dic['TargetOption']['SFDFile'][0]
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['RegisterFile'] = mcu_def_dic['TargetOption']['RegisterFile'][0]
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Vendor'] = expanded_dic['TargetOption']['Vendor'][0]
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Cpu'] = expanded_dic['TargetOption']['Cpu'][0].encode('utf-8')
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['FlashDriverDll'] = str(expanded_dic['TargetOption']['FlashDriverDll'][0]).encode('utf-8')
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['SFDFile'] = expanded_dic['TargetOption']['SFDFile'][0]
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['RegisterFile'] = expanded_dic['TargetOption']['RegisterFile'][0]
         except KeyError:
             pass
 
         # overwrite the template if target has defined debugger
         # later progen can overwrite this if debugger is set in project data
         try:
-            debugger_name = pro_def.get_debugger(expanded_dic['target'])['name']
+            debugger_name = expanded_dic['TargetOption']['Debugger']['Name']
             uvproj_dic['Project']['Targets']['Target']['TargetOption']['DebugOption']['TargetDlls']['Driver'] = self.definitions.debuggers[debugger_name]['uvproj']['TargetDlls']['Driver']
             uvproj_dic['Project']['Targets']['Target']['TargetOption']['Utilities']['Flash2'] = self.definitions.debuggers[debugger_name]['uvproj']['Utilities']['Flash2']
         except (TypeError, KeyError) as err:
             pass
         # Support new device packs
-        if 'PackID' in  mcu_def_dic['TargetOption']:
+        if 'PackID' in  expanded_dic['TargetOption']:
             if tool_name != 'uvision5':
                 # using software packs require v5
                 logger.info("The target might not be supported in %s, requires uvision5" % tool_name)
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['PackID'] = mcu_def_dic['TargetOption']['PackID'][0]
+            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['PackID'] = expanded_dic['TargetOption']['PackID'][0]
 
     def _uvoptx_set_debugger(self, expanded_dic, uvoptx_dic, tool_name):
-        pro_def = ProGenDef(tool_name)
-        if not pro_def.is_supported(expanded_dic['target'].lower()):
-            raise RuntimeError("Target %s is not supported. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
-        mcu_def_dic = pro_def.get_tool_definition(expanded_dic['target'].lower())
-        if not mcu_def_dic:
-            raise RuntimeError(
-                "Target definitions were not found for %s. Please add them to https://github.com/project-generator/project_generator_definitions" % expanded_dic['target'].lower())
-        logger.debug("Mcu definitions: %s" % mcu_def_dic)
-
         # set the same target name FlashDriverDll config as in uvprojx file
         try:
             uvoptx_dic['ProjectOpt']['Target']['TargetName'] = expanded_dic['name']
-            uvoptx_dic['ProjectOpt']['Target']['TargetOption']['TargetDriverDllRegistry']['SetRegEntry']['Name'] = str(mcu_def_dic['TargetOption']['FlashDriverDll'][0]).encode('utf-8')
+            uvoptx_dic['ProjectOpt']['Target']['TargetOption']['TargetDriverDllRegistry']['SetRegEntry']['Name'] = str(expanded_dic['TargetOption']['FlashDriverDll'][0]).encode('utf-8')
         except KeyError:
             return 
 
         # load debugger from target dictionary or use default debugger
         try:
-            debugger_dic = pro_def.get_debugger(expanded_dic['target'])
-            if debugger_dic is None:
-                debugger_name = self.definitions.debuggers_default
-            else:
-                debugger_name = debugger_dic['name']
+            debugger_name = expanded_dic['TargetOption']['Debugger']['Name']
             uvoptx_dic['ProjectOpt']['Target']['TargetOption']['DebugOpt']['nTsel'] = self.definitions.debuggers[debugger_name]['uvoptx']['DebugOpt']['nTsel']
             uvoptx_dic['ProjectOpt']['Target']['TargetOption']['DebugOpt']['pMon'] = self.definitions.debuggers[debugger_name]['uvoptx']['DebugOpt']['pMon']
             uvoptx_dic['ProjectOpt']['Target']['TargetOption']['TargetDriverDllRegistry']['SetRegEntry']['Key'] = self.definitions.debuggers[debugger_name]['uvoptx']['SetRegEntry']['Key']
@@ -445,16 +458,15 @@ class Uvision(Tool, Builder, Exporter):
             extension = 'uvproj'
             uvproj_dic['Project']['SchemaVersion'] = '1.1'
 
-        if expanded_dic['target']:
-            self._set_target(expanded_dic, uvproj_dic, tool_name)
+        self._set_target(expanded_dic, uvproj_dic, tool_name)
 
         # load debugger
-        if expanded_dic['debugger']:
+        if expanded_dic['TargetOption']['Debugger']:
             try:
-                uvproj_dic['Project']['Targets']['Target']['TargetOption']['DebugOption']['TargetDlls']['Driver'] = self.definitions.debuggers[expanded_dic['debugger']]['uvproj']['TargetDlls']['Driver']
-                uvproj_dic['Project']['Targets']['Target']['TargetOption']['Utilities']['Flash2'] = self.definitions.debuggers[expanded_dic['debugger']]['uvproj']['Utilities']['Flash2']
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['DebugOption']['TargetDlls']['Driver'] = self.definitions.debuggers[expanded_dic['TargetOption']['Debugger']['Name']]['uvproj']['TargetDlls']['Driver']
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['Utilities']['Flash2'] = self.definitions.debuggers[expanded_dic['TargetOption']['Debugger']['Name']]['uvproj']['Utilities']['Flash2']
             except KeyError:
-                raise RuntimeError("Debugger %s is not supported" % expanded_dic['debugger'])
+                raise RuntimeError("Debugger %s is not supported" % expanded_dic['Debugger'])
 
         # Project file
         uvproj_xml = xmltodict.unparse(uvproj_dic, pretty=True)

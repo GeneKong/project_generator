@@ -106,7 +106,12 @@ class ProjectTemplate:
             },
         }
         return data_template
-
+    @staticmethod
+    def _get_tool_specific_template():
+        return {
+            'TargetOption':{},       # armcc            
+            }
+        
     @staticmethod
     def get_project_template(name="Default", output_type='exe', debugger=None, build_dir='build', port_dest = 'feConfig'):
         """ Project data (+ data) """
@@ -117,8 +122,7 @@ class ProjectTemplate:
             'export_dir': '',         # Export directory path
             'name': name,             # project name
             'type': output_type,      # output type, default - exe
-            'templates': [],          # templates
-            'tool_specific':{},       # 
+            'templates': [],          # templates            
             'linker_search_paths': [],
             'required': {},           # Tools which are supported,
             'portable':{
@@ -128,6 +132,7 @@ class ProjectTemplate:
             }
         }
         project_template.update(ProjectTemplate._get_common_data_template())
+        project_template.update(ProjectTemplate._get_tool_specific_template())
         return project_template
 
 class Project:
@@ -197,14 +202,12 @@ class Project:
                                         self._process_files_item(ikey, favor)
                                 elif key in self.project:
                                     self.project[key] = Project._dict_elim_none(merge_recursive(self.project[key], favor[key]))
-
-                self.src_dicts = fix_properties_in_context(self.src_dicts, gen.properties)
         except IOError:
             raise IOError("The module.yaml in project:%s doesn't exist." % self.name)
 
         self._update_from_src_dict(Project._dict_elim_none(self.src_dicts))
         self.project['type'] = self.project['type'].lower()
-        
+        self.project = fix_properties_in_context(self.project, gen.properties)
         
         # always copy portable file to destionation
         self._copy_portable_to_destination()
@@ -224,7 +227,7 @@ class Project:
                 merge_without_override(self.project['required'][subproj], project_dicts)
             else:
                 self.project['required'][subproj] = project_dicts
-            self.sub_projects[subproj] = Project(subproj, tool, self.project['required'][subproj], settings, gen, self)
+            self.sub_projects[subproj] = Project(subproj, self.tool, self.project['required'][subproj], settings, gen, self)
             if self.project['type'] == 'src'and self.sub_projects[subproj].project['type'] != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
             self._inherit_parent_flags_and_macros(self.sub_projects[subproj])
@@ -480,6 +483,17 @@ class Project:
         self.export['linker'] = self.project['linker']
         self.export['output_type'] = self.project['type']
         self.export['name'] = self.name
+        self.export['type'] = self.project['type']
+        self.export['linker_search_paths'].extend(self.project['linker_search_paths'])
+        # some tools need special build dir, like uvision
+        self.export['build_dir'] = self.project['build_dir']
+        self.export['TargetOption'] = self.project['TargetOption']
+        try:
+            if self.project['type'] == 'exe':
+                # some tools only support one linker file,linke uvision
+                self.export['linker_file'] = os.path.join(self.name,self.project['linker']['script_files'][0])
+        except IndexError:
+            raise NameError ("linker file must be set.")
         
         fix_paths(self.export, self.export['output_dir']['rel_path'],
                    list(FILES_EXTENSIONS.keys()) + ['include_paths', 'source_paths', 'linker_search_paths'])
@@ -570,17 +584,6 @@ class Project:
         if copy:
             logger.debug("Copying sources to the output directory")
             self._copy_sources_to_generated_destination()
-        
-        self.export['type'] = self.project['type']
-        self.export['linker_search_paths'].extend(self.project['linker_search_paths'])
-        # some tools need special build dir, like uvision
-        self.export['build_dir'] = self.project['build_dir']
-        try:
-            if self.project['type'] == 'exe':
-                # some tools only support one linker file,linke uvision
-                self.export['linker_file'] = self.project['linker']['script_files'][0]
-        except IndexError:
-            raise NameError ("linker file must be set.")
         
         # dump a log file if debug is enabled
         if logger.isEnabledFor(logging.DEBUG):

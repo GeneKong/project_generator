@@ -39,6 +39,7 @@ class Generator:
             self.settings.update(self.projects_dict['settings'])
     
     def _generate_subproj(self, project):
+        """ don't generate src project """
         for k, sproj in project.sub_projects.items():
             if sproj.project['type'].lower() != "src":
                 yield sproj
