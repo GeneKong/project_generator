@@ -13,15 +13,19 @@
 # limitations under the License.
 
 import os
-import pip
-
-from pip.req import parse_requirements
+try:
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import download
+except ImportError:
+    from pip.req import parse_requirements
+    from pip.download import download
+    
 from setuptools import setup, find_packages
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-requirements = [str(requirement.req) for requirement in parse_requirements('requirements.txt', session=pip.download.PipSession())]
+requirements = [str(requirement.req) for requirement in parse_requirements('requirements.txt', session=download.PipSession())]
 
 setup(
     name='project_generator',

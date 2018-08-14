@@ -22,7 +22,7 @@ import yaml
 
 from .tools_supported import ToolsSupported
 from .tools.tool import get_tool_template
-from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, SOURCE_KEYS, fix_paths, merge_without_override, fix_properties_in_context
+from .util import merge_recursive, PartialFormatter, FILES_EXTENSIONS, VALID_EXTENSIONS, FILE_MAP, copytree, fix_paths, merge_without_override, fix_properties_in_context
 
 logger = logging.getLogger('progen.project')
 
@@ -207,7 +207,7 @@ class Project:
 
         self._update_from_src_dict(Project._dict_elim_none(self.src_dicts))
         self.project['type'] = self.project['type'].lower()
-        self.project = fix_properties_in_context(self.project, gen.properties)
+        self.project = fix_properties_in_context(self.project, settings.properties)
         
         # always copy portable file to destionation
         self._copy_portable_to_destination()
@@ -221,13 +221,14 @@ class Project:
         
         #Process required project
         self.sub_projects = {}
-        for subproj in self.project['required']:            
-            gen.reset_properties()
+        for subproj in self.project['required']:                        
             if self.project['required'][subproj]:
                 merge_without_override(self.project['required'][subproj], project_dicts)
             else:
                 self.project['required'][subproj] = project_dicts
+            gen.push_properties()
             self.sub_projects[subproj] = Project(subproj, self.tool, self.project['required'][subproj], settings, gen, self)
+            gen.pop_properties()
             if self.project['type'] == 'src'and self.sub_projects[subproj].project['type'] != 'src':
                 raise NameError ("'src' type project %s required project must be 'src' type, but %s not." % (name, subproj))
             self._inherit_parent_flags_and_macros(self.sub_projects[subproj])
@@ -528,32 +529,62 @@ class Project:
                 if not os.path.exists(os.path.dirname(d)):
                     os.makedirs(os.path.join(self.settings.root, os.path.dirname(d)))
                 shutil.copy2(s,d)
-
+    
+    def _ignore_source_files(self, s_cfg_path, d_cfg_path, src, names):
+        ignore_names = []
+        for name in names:
+            if os.path.splitext(name)[1] in [".h", ".hpp", "inc"]:
+                d_cfg_file = os.path.normpath(os.path.join(d_cfg_path, os.path.relpath(s_cfg_path, src), name))
+                self.project['files']['includes'].setdefault(self._get_portable_group(), []).append(os.path.relpath(d_cfg_file, self.basepath))
+            else:
+                ignore_names.append(name)                
+        return ignore_names
+    
+    def _ignore_header_files(self, s_port_path, d_port_path, src, names):
+        ignore_names = []
+        for name in names:
+            if os.path.splitext(name)[1] in [".c", ".cpp", "cc"]:
+                d_port_file = os.path.normpath(os.path.join(d_port_path, os.path.relpath(s_port_path, src), name))
+                self.project['files']['sources'].setdefault(self._get_portable_group(), []).append(os.path.relpath(d_port_file, self.basepath))
+            else:
+                ignore_names.append(name)
+        return ignore_names
+    
+    def _get_portable_group(self):
+        return "%s_%s" % (self.project['portable']['dest'], self.name)
+        
     def _copy_portable_to_destination(self):
         """ Copies all project portable files to specified project """
-        d_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "include", self.name))        
+        d_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "include", self.name))       
         for cfg in self.project['portable']['config']:
-            s_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, cfg))            
-            if os.path.isfile(s_cfg_path):
-                name,ext = os.path.splitext(os.path.basename(s_cfg_path))
+            s_cfg_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, cfg))
+            if os.path.isdir(s_cfg_path):
+                # auto process all header files as config file
+                copytree(s_cfg_path, d_cfg_path,
+                                 ignore = lambda src, names: self._ignore_source_files(s_cfg_path, d_cfg_path, src, names))                
+            elif os.path.isfile(s_cfg_path):
                 if not os.path.exists(d_cfg_path):
-                    os.makedirs(d_cfg_path)
+                    os.makedirs(d_cfg_path) 
+                name,ext = os.path.splitext(os.path.basename(s_cfg_path))
                 d_cfg_file = os.path.join(d_cfg_path, name+".h")
                 if not os.path.exists(d_cfg_file):
-                    shutil.copy2(s_cfg_path, d_cfg_file)
-                
-                self.project['files']['includes'].setdefault(self.project['portable']['dest'], []).append(os.path.relpath(d_cfg_file, self.basepath))            
-        d_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "port", self.name))  
+                    shutil.copy2(s_cfg_path, d_cfg_file)                
+                    self.project['files']['includes'].setdefault(self._get_portable_group(), []).append(os.path.relpath(d_cfg_file, self.basepath))
+                            
+        d_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, "..", self.project['portable']['dest'], "port", self.name)) 
         for port in self.project['portable']['port']:
-            s_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, port))            
-            if os.path.isfile(s_port_path):
+            s_port_path = os.path.normpath(os.path.join(self.settings.root, self.basepath, port))
+            if os.path.isdir(s_port_path):
+                copytree(s_port_path, d_port_path,
+                                 ignore = lambda src, names: self._ignore_header_files(s_port_path, d_port_path, src, names))
+            elif os.path.isfile(s_port_path):
                 if not os.path.exists(d_port_path):
-                    os.makedirs(d_port_path)
+                    os.makedirs(d_port_path) 
                 d_port_file = os.path.join(d_port_path, os.path.basename(s_port_path))
                 if not os.path.exists(d_port_file):
                     shutil.copy2(s_port_path, d_port_file)
                     
-                self.project['files']['sources'].setdefault(self.project['portable']['dest'], []).append(os.path.relpath(d_port_file, self.basepath))
+                self.project['files']['sources'].setdefault(self._get_portable_group(), []).append(os.path.relpath(d_port_file, self.basepath))
                 
     def clean(self):
         """ Clean a project """

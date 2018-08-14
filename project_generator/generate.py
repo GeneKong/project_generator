@@ -22,18 +22,18 @@ class Generator:
         self.basepath = os.path.dirname(source)
         if len(self.basepath) == 0:
             self.basepath = "."
-        self.properties = {}
+        self.properties = [{}]
         try:
             with open(source, 'rt') as f:
                 self.projects_dict = yaml.load(f)
                 if 'properties' in self.projects_dict:
-                    self.properties = self.projects_dict['properties']                    
+                    self.properties = [self.projects_dict['properties']]                    
                     self.projects_dict = fix_properties_in_context(self.projects_dict, self.properties)
         except IOError:
             raise IOError("The main progen projects file %s doesn't exist." % source)
         self.settings = ProjectSettings()
         # origin properties backup in settings
-        self.settings.properties = copy.deepcopy(self.properties)
+        self.settings.properties = self.properties[-1]
 
         if 'settings' in self.projects_dict:
             self.settings.update(self.projects_dict['settings'])
@@ -53,8 +53,9 @@ class Generator:
                 if name in self.projects_dict['projects'].keys():
                     found = True
                     records = self.projects_dict['projects'][name]
-                    self.reset_properties()
+                    self.push_properties()
                     project = Project(name, tool, records,  self.settings, self)
+                    self.pop_properties()
                     yield project
                     for sproj in self._generate_subproj(project):
                         yield sproj
@@ -63,10 +64,11 @@ class Generator:
                 found = True
                 for name, records in sorted(self.projects_dict['projects'].items(),
                                             key=lambda x: x[0]):
-                    self.reset_properties()
                     if not records:
                         records = {}
+                    self.push_properties()
                     project = Project(name, tool, records, self.settings, self)
+                    self.pop_properties()
                     yield project
                     for sproj in self._generate_subproj(project):
                         yield sproj
@@ -74,11 +76,13 @@ class Generator:
         if not found:
             logging.error("You specified an invalid project name.")
 
-    def reset_properties(self):
-        """
-        reset root project properties
-        """
-        self.properties = copy.deepcopy(self.settings.properties)
+    def push_properties(self):
+        self.properties.append(copy.deepcopy(self.settings.properties))
+        self.settings.properties = self.properties[-1]
+        
+    def pop_properties(self):
+        self.properties.pop(-1)
+        self.settings.properties = self.properties[-1]
         
     def merge_properties_without_override(self, prop_dict):
         """
@@ -86,12 +90,12 @@ class Generator:
         """
         for key, value in prop_dict.items():
             if type(value) is dict:
-                if key in self.properties:
-                    merge_without_override(self.properties[key], value)
+                if key in self.settings.properties:
+                    merge_without_override(self.settings.properties[key], value)
                 else:
-                    self.properties[key] = value
-            elif key not in self.properties:
-                self.properties[key] = value
+                    self.settings.properties[key] = value
+            elif key not in self.settings.properties:
+                self.settings.properties[key] = value
                 
 
 # all {var} will try to repalced, yaml can't work good for parse

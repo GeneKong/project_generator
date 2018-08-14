@@ -111,14 +111,21 @@ class PartialFormatter(string.Formatter):
     
 def fix_properties_in_context(dest, prop):
     def userVar_sub(matchobj):
-        if matchobj.group(1) in prop:
-            ans = prop[matchobj.group(1)]
+        name = matchobj.group(1)
+        tag = ""
+        if '#' in name:
+            name, tag = name.split("#")
+            
+        if name in prop:
+            ans = prop[name]
             if type(ans) != str:
-                raise SystemError("Found property:%s is list type." % matchobj.group(1))
+                raise SystemError("Found property:%s is list type." % name)
+            elif tag:
+                return ans.__getattribute__(tag)()
             else:
                 return ans
         else :
-            raise SystemError("Found property:%s can be resolved." % matchobj.group(1))
+            raise SystemError("Found property:%s can be resolved." % name)
     
     if type(dest) == dict:
         ndest = {}
@@ -147,3 +154,45 @@ def fix_paths(project_data, rel_path, extensions):
                 project_data[key] = [norm_func(i) for i in project_data[key]]
             else:
                 project_data[key] = norm_func(project_data[key])
+
+def fix_path(rel_path, path):
+    ''' fixed single path '''
+    return os.path.normpath(os.path.join(rel_path, path))
+
+
+def copytree(src, dst, ignore = None):
+    '''Copy without override'''
+    names = os.listdir(src)
+    if ignore is not None:
+        ignored_names = ignore(src, names)
+    else:
+        ignored_names = set()
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    errors = []
+    for name in names:
+        if name in ignored_names:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        
+        try:
+            if os.path.isdir(srcname):
+                copytree(srcname, dstname, ignore)
+            elif not os.path.exists(dstname):
+                shutil.copy2(srcname, dstname)
+        except shutil.Error, err:
+            errors.extend(err.args[0])
+        except EnvironmentError, why:
+            errors.append((srcname, dstname, str(why)))
+            
+    try:
+        shutil.copystat(src, dst)
+    except OSError, why:
+        if WindowsError is not None and isinstance(why, WindowsError):
+            # Copying file access times may fail on Windows
+            pass
+        else:
+            errors.append((src, dst, str(why)))
+    if errors:
+        raise shutil.Error, errors

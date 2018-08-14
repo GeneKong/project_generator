@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <Project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="project_proj.xsd">
 	<SchemaVersion>1.1</SchemaVersion>
 	<Header>### uVision Project, (C) Keil Software</Header>
@@ -216,7 +216,7 @@
 						<hadXRAM>0</hadXRAM>
 						<uocXRam>0</uocXRam>
 						<RvdsVP>0</RvdsVP>
-						<hadIRAM2>1</hadIRAM2>
+						<hadIRAM2>0</hadIRAM2>
 						<hadIROM2>0</hadIROM2>
 						<StupSel>8</StupSel>
 						<useUlib>0</useUlib>
@@ -334,15 +334,15 @@
 							</OCR_RVCT9>
 							<OCR_RVCT10>
 								<Type>0</Type>
-								<StartAddress>0x2007c000</StartAddress>
-								<Size>0x8000</Size>
+								<StartAddress>0</StartAddress>
+								<Size>0</Size>
 							</OCR_RVCT10>
 						</OnChipMemories>
 						<RvctStartVector></RvctStartVector>
 					</ArmAdsMisc>
 					<Cads>
 						<interw>0</interw>
-						<Optim>2</Optim>
+						<Optim>1</Optim>
 						<oTime>0</oTime>
 						<SplitLS>0</SplitLS>
 						<OneElfS>0</OneElfS>

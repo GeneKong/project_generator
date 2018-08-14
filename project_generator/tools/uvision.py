@@ -25,7 +25,7 @@ from os import getcwd
 from os.path import basename, join, normpath
 from collections import OrderedDict
 from .tool import Tool, Builder, Exporter
-from ..util import SOURCE_KEYS
+from ..util import fix_path
 
 logger = logging.getLogger('progen.tools.uvision')
 
@@ -207,8 +207,11 @@ class Uvision(Tool, Builder, Exporter):
         return 'armcc'
 
     def _expand_one_file(self, source, new_data, extension):
-        return {"FilePath": source, "FileName": basename(source),
-                            "FileType": self.file_types[extension]}
+        file_dict= OrderedDict()
+        file_dict["FileName"] =  basename(source)
+        file_dict["FileType"] =  self.file_types[extension]
+        file_dict["FilePath"] =  source
+        return file_dict
 
     def _normalize_mcu_def(self, mcu_def):
         for k, v in mcu_def['TargetOption'].items():
@@ -260,6 +263,7 @@ class Uvision(Tool, Builder, Exporter):
             if IRAM2 and IRAM2.group(2):
                 uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT10']['StartAddress'] = IRAM2.group(1)
                 uvproj_dic['ArmAdsMisc']['OnChipMemories']['OCR_RVCT10']['Size'] = IRAM2.group(2)
+                uvproj_dic['ArmAdsMisc']['hadIRAM2'] = '1'
         except (IndexError, KeyError):
             pass
         try:
@@ -350,8 +354,18 @@ class Uvision(Tool, Builder, Exporter):
             uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Vendor'] = expanded_dic['TargetOption']['Vendor'][0]
             uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['Cpu'] = expanded_dic['TargetOption']['Cpu'][0].encode('utf-8')
             uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['FlashDriverDll'] = str(expanded_dic['TargetOption']['FlashDriverDll'][0]).encode('utf-8')
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['SFDFile'] = expanded_dic['TargetOption']['SFDFile'][0]
-            uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['RegisterFile'] = expanded_dic['TargetOption']['RegisterFile'][0]
+            if "$" in expanded_dic['TargetOption']['SFDFile'][0]:
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['SFDFile'] = expanded_dic['TargetOption']['SFDFile'][0]
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['bCustSvd'] = '0'
+            else:
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['SFDFile'] = fix_path(expanded_dic['output_dir']['rel_path'], expanded_dic['TargetOption']['SFDFile'][0])
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['bCustSvd'] = '1'
+                
+            if "$" in  expanded_dic['TargetOption']['RegisterFile'][0]:
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['RegisterFile'] = expanded_dic['TargetOption']['RegisterFile'][0]
+            else:
+                uvproj_dic['Project']['Targets']['Target']['TargetOption']['TargetCommonOption']['RegisterFile'] = fix_path(expanded_dic['output_dir']['rel_path'], expanded_dic['TargetOption']['RegisterFile'][0])
+            
         except KeyError:
             pass
 
@@ -454,6 +468,7 @@ class Uvision(Tool, Builder, Exporter):
         if tool_name == 'uvision5':
             extension = 'uvprojx'
             uvproj_dic['Project']['SchemaVersion'] = '2.1'
+            uvproj_dic['Project']['xsi:noNamespaceSchemaLocation'] = 'project_optx.xsd'
         else:
             extension = 'uvproj'
             uvproj_dic['Project']['SchemaVersion'] = '1.1'
@@ -467,7 +482,6 @@ class Uvision(Tool, Builder, Exporter):
                 uvproj_dic['Project']['Targets']['Target']['TargetOption']['Utilities']['Flash2'] = self.definitions.debuggers[expanded_dic['TargetOption']['Debugger']['Name']]['uvproj']['Utilities']['Flash2']
             except KeyError:
                 raise RuntimeError("Debugger %s is not supported" % expanded_dic['Debugger'])
-
         # Project file
         uvproj_xml = xmltodict.unparse(uvproj_dic, pretty=True)
         project_path, uvproj = self.gen_file_raw(uvproj_xml, '%s.%s' % (expanded_dic['name'], extension), expanded_dic['output_dir']['path'])
@@ -484,9 +498,11 @@ class Uvision(Tool, Builder, Exporter):
             extension = 'uvoptx'
         else:
             extension = 'uvopt'
-
+            
+        if tool_name == 'uvision5':
+            uvoptx_dic['ProjectOpt']['xsi:noNamespaceSchemaLocation'] = 'project_optx.xsd'
         # Project file
-        uvoptx_xml = xmltodict.unparse(uvoptx_dic, pretty=True)
+        uvoptx_xml = xmltodict.unparse(uvoptx_dic, pretty=True)            
         project_path, uvoptx = self.gen_file_raw(uvoptx_xml, '%s.%s' % (expanded_dic['name'], extension), expanded_dic['output_dir']['path'])
 
         return project_path, [uvproj, uvoptx]
