@@ -292,6 +292,7 @@ class Uvision(Tool, Builder, Exporter):
                     uvproj_dic[self.FLAGS_TO_UVISION[misc_keys]]['Misc'] += ' ' + item
             else:
                 for item in project_dic['flags'][misc_keys]:
+                    if item == "common": continue   # bypass common flags for uvision
                     uvproj_dic[self.FLAGS_TO_UVISION[misc_keys]]['VariousControls']['MiscControls'] += ' ' + item
 
     def _uvproj_set_TargetCommonOption(self, uvproj_dic, project_dic):
@@ -587,3 +588,4 @@ class Uvision5(Uvision):
     def build_project(self):
         # tool_name uvision as uv4 is still used in uv5
         return self._build_project('uvision', 'uvprojx')
+

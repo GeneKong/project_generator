@@ -61,6 +61,9 @@ def merge_recursive(*args):
             return args[1]
         elif type(args[0]) is str:
             return args[0]
+        elif type(args[0]) is dict and type(args[1]) is list:
+            _args = [args[0], {"": args[1]}]
+            return merge_recursive(*_args)
         else:
             return reduce(operator.add, args)
     
