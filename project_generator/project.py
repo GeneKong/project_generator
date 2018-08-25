@@ -153,6 +153,7 @@ class Project:
         self.tool = tool
         self.parent = parent
         self.basepath = os.path.sep.join([gen.basepath, name])
+        self.portable_dirs = []
         if 'favors' in project_dicts:
             self.favors = project_dicts['favors']
         else:
@@ -305,6 +306,9 @@ class Project:
                             src_project["files"]["sources"][key].append(os.path.join("..", subproj.name, path))
                                                     
         self._update_from_src_dict(src_project, False)
+        for dir in subproj.portable_dirs:
+            if dir not in self.portable_dirs:
+                self.portable_dirs.append(dir)                
     
     def _process_files_item(self, key, src_dicts):
         if type(src_dicts['files'][key]) is list:
@@ -495,6 +499,19 @@ class Project:
                 self.export['linker_file'] = os.path.join(self.name,self.project['linker']['script_files'][0])
         except IndexError:
             raise NameError ("linker file must be set.")
+                        
+        # re-order include paths
+        include_paths = []
+        for path in self.export['include_paths']:
+            portable = False
+            for dir in self.portable_dirs:
+                if dir in path:
+                    portable = True
+            if portable:
+                include_paths.insert(0, path)
+            else:
+                include_paths.append(path)                
+        self.export['include_paths'] = include_paths
         
         fix_paths(self.export, self.export['output_dir']['rel_path'],
                    list(FILES_EXTENSIONS.keys()) + ['include_paths', 'source_paths', 'linker_search_paths'])
@@ -550,8 +567,11 @@ class Project:
                 ignore_names.append(name)
         return ignore_names
     
-    def _get_portable_group(self):
-        return "%s_%s" % (self.project['portable']['dest'], self.name)
+    def _get_portable_group(self):        
+        portable = "%s_%s" % (self.project['portable']['dest'], self.name)
+        if self.project['portable']['dest'] not in self.portable_dirs:
+            self.portable_dirs.append(self.project['portable']['dest'])
+        return portable
         
     def _copy_portable_to_destination(self):
         """ Copies all project portable files to specified project """

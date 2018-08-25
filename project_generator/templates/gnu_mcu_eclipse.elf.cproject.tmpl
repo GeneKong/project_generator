@@ -94,6 +94,7 @@
                                     {%- endfor %}
                                 </option>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.nostdinc.1537121578" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.nostdinc" value="{{options.value['-nostdinc']}}" valueType="boolean"/>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other.1706183973" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.other" useByScannerDiscovery="false" value="{{options.other_asm_flags}}" valueType="string"/>
                                 <inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.1286730" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
                             </tool>
                             <tool command="${cross_prefix}${cross_c}${cross_suffix}" commandLinePattern="${COMMAND} ${cross_toolchain_flags} ${FLAGS} -c ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GCCErrorParser" id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.351290358" name="GNU ARM Cross C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
@@ -110,6 +111,7 @@
                                     <listOptionValue builtIn="false" value="{{macro}}"/>
                                     {%- endfor %}
                                 </option>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other.1958097977" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.other" useByScannerDiscovery="true" value="{{options.other_c_flags}}" valueType="string"/>
                                 <inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.137033771" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
                             </tool>
                             <tool command="${cross_prefix}${cross_cpp}${cross_suffix}" commandLinePattern="${COMMAND} ${cross_toolchain_flags} ${FLAGS} -c ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GCCErrorParser" id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1175705810" name="GNU ARM Cross C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler">
@@ -139,6 +141,7 @@
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warning.strictnullsentinel.1622210978" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warning.strictnullsentinel" value="{{options.value['-Wstrict-null-sentinel']}}" valueType="boolean"/>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warning.signpromo.134369636" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warning.signpromo" value="{{options.value['-Wsign-promo']}}" valueType="boolean"/>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warneffc.829326502" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.warneffc" value="{{options.value['-Weffc++']}}" valueType="boolean"/>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other.737750401" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.other" useByScannerDiscovery="true" value="{{options.other_cxx_flags}}" valueType="string"/>
                                 <inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.558177765" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input"/>
                             </tool>
                             <tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1213615483" name="GNU ARM Cross C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker">
@@ -185,6 +188,7 @@
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usescanffloat.703010346" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usescanffloat" value="{{options.value['-u_scanf_float']}}" valueType="boolean"/>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usenewlibnosys.322433622" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usenewlibnosys" value="{{options.value['--specs=nosys.specs']}}" valueType="boolean"/>
                                 <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.verbose.1436587471" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.verbose" value="{{options.value['-v']}}" valueType="boolean"/>
+                                <option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other.1316078010" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other" useByScannerDiscovery="false" value="{{options.other_ld_flags}}" valueType="string"/>
                                 <inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input.131626282" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input">
                                     <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
                                     <additionalInput kind="additionalinput" paths="$(LIBS)"/>
