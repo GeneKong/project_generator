@@ -15,10 +15,10 @@
 import os
 try:
     from pip._internal.req import parse_requirements
-    from pip._internal.download import download
+    from pip._internal import download
 except ImportError:
     from pip.req import parse_requirements
-    from pip.download import download
+    from pip import download
     
 from setuptools import setup, find_packages
 
