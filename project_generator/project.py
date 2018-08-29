@@ -321,7 +321,11 @@ class Project:
                     
     @staticmethod
     def _list_elim_none(list_to_clean):
-        return [l for l in list_to_clean if l]
+        _list = []
+        for item in list_to_clean:
+            if item and item not in _list:
+                _list.append(item)                
+        return _list
 
     @staticmethod
     def _dict_elim_none(dic_to_clean):
