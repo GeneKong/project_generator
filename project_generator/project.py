@@ -179,7 +179,10 @@ class Project:
                                 elif key in self.project:
                                     self.project[key] = Project._dict_elim_none(
                                         merge_recursive(self.project[key], self.src_dicts['tool_specific'][tool][key]))
-                                
+
+                if 'favors' in self.src_dicts:
+                    print self.src_dicts['favors']
+
                 if 'properties' in self.src_dicts:
                     gen.merge_properties_without_override(self.src_dicts['properties'])
                 if 'favor_dimensions' in self.src_dicts:
