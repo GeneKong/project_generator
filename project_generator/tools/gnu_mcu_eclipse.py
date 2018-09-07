@@ -364,7 +364,7 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
         expanded_dic = self.workspace.copy()
         
         # process path format in windows
-        for name in ['include_paths', 'source_paths','include_paths', 'linker_search_paths',
+        for name in ['include_paths', 'source_paths','include_paths', 'linker_search_paths', 'lib_search_paths',
                      'source_files_c', 'source_files_cpp', 'source_files_s']:            
             expanded_dic[name] = self._fixed_path_2_unix_style(expanded_dic[name])
             

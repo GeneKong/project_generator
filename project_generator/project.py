@@ -124,6 +124,7 @@ class ProjectTemplate:
             'type': output_type,      # output type, default - exe
             'templates': [],          # templates            
             'linker_search_paths': [],
+            'lib_search_paths': [],
             'required': {},           # Tools which are supported,
             'portable':{
                 'dest': port_dest,
@@ -181,7 +182,9 @@ class Project:
                                         merge_recursive(self.project[key], self.src_dicts['tool_specific'][tool][key]))
 
                 if 'favors' in self.src_dicts:
-                    print self.src_dicts['favors']
+                    for key in self.src_dicts['favors']:
+                        if key not in self.favors:
+                            self.favors[key] = self.src_dicts['favors'][key]
 
                 if 'properties' in self.src_dicts:
                     gen.merge_properties_without_override(self.src_dicts['properties'])
@@ -274,6 +277,8 @@ class Project:
         if ptype == 'lib':
             src_project.pop('portable')
             src_project['files'].pop("sources")
+            if 'TargetOption' in self.project:
+                subproj.project['TargetOption'] = self.project['TargetOption']
             
         if ptype != "exe":
             #Merge search path
@@ -287,7 +292,7 @@ class Project:
                         
         if ptype == "lib":
             self.project["linker"]["libraries"].append(os.path.basename(subproj.outdir_path))
-            self.project["linker_search_paths"].append(os.path.join("..", os.path.basename(subproj.outdir_path), "Debug"))
+            self.project["lib_search_paths"].append(os.path.join("..","..", os.path.basename(subproj.outdir_path), self.project['build_dir']))
             
         #Merge file path
         if "files" in src_project:
@@ -497,6 +502,8 @@ class Project:
         self.export['name'] = self.name
         self.export['type'] = self.project['type']
         self.export['linker_search_paths'].extend(self.project['linker_search_paths'])
+        self.export['lib_search_paths'].extend(self.project['lib_search_paths'])
+        
         # some tools need special build dir, like uvision
         self.export['build_dir'] = self.project['build_dir']
         self.export['TargetOption'] = self.project['TargetOption']

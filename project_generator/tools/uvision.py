@@ -242,7 +242,8 @@ class Uvision(Tool, Builder, Exporter):
         self._uvproj_clean_xmldict(uvproj_dic['Cads'])
         self._uvproj_clean_xmldict(uvproj_dic['Cads']['VariousControls'])
         self._uvproj_clean_xmldict(uvproj_dic['LDads'])
-        uvproj_dic['LDads']['ScatterFile'] = project_dic['linker_file']
+        if project_dic['output_type'] == 'exe':
+            uvproj_dic['LDads']['ScatterFile'] = project_dic['linker_file']
         try:
             AdsCpuType = re.search('CPUTYPE\((.*?)\)', project_dic["TargetOption"]["Cpu"][0])
             if AdsCpuType and AdsCpuType.group(1):

@@ -59,6 +59,7 @@ def get_tool_template():
         'source_paths': [],
         'include_paths': [],
         'linker_search_paths':[],
+        'lib_search_paths': [],
         'include_files': {},
         'source_files_c': {},
         'source_files_cpp': {},
