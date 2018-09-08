@@ -293,6 +293,15 @@ class Project:
         if ptype == "lib":
             self.project["linker"]["libraries"].append(os.path.basename(subproj.outdir_path))
             self.project["lib_search_paths"].append(os.path.join("..","..", os.path.basename(subproj.outdir_path), self.project['build_dir']))
+            if self.tool.startswith('uvision'):
+                proj_build_path = os.path.join(*subproj.outdir_path.split(os.sep))
+                self.project['files']['sources'].setdefault("Lib", []).append(
+                    os.path.join(
+                        "..",
+                        proj_build_path,
+                        self.project['build_dir'],
+                        os.path.basename(subproj.outdir_path)+".lib")
+                    )
             
         #Merge file path
         if "files" in src_project:
