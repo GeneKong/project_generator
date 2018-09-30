@@ -376,7 +376,11 @@ class EclipseGnuMCU(Tool, Exporter, Builder):
             expanded_dic['groups'][group] = []
         self._iterate(self.workspace, expanded_dic)
 
-        expanded_dic['src_groups']  = self._get_src_groups(expanded_dic)
+        expanded_dic['src_groups'] = []
+        for group in self._get_src_groups(expanded_dic):
+            rgrp = group.split("/")[0]
+            if rgrp not in expanded_dic['src_groups']:
+                expanded_dic['src_groups'].append(rgrp)
 
         expanded_dic["options"] = {}
         expanded_dic["options"]["optimization"] = EclipseGnuMCU.get_optimization_gnuarmeclipse_id("")
